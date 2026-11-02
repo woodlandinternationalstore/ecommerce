@@ -19,7 +19,7 @@ const WHY = [
 export default async function Home() {
   const [cats, featured, stats] = await Promise.all([categories(), featuredProducts(8), publicStats()]);
   const vehicles = await vehicleSummaries(featured.map((p) => p.id));
-  const headline = ["All your car", "spare parts", "in one place"];
+  const headline = ["All your car", "spare parts", "in one place."];
 
   return (
     <>
@@ -29,8 +29,8 @@ export default async function Home() {
         <div className="absolute -left-24 bottom-[-120px] h-[420px] w-[420px] text-white/[0.04]" aria-hidden="true"><Gear teeth={14} className="gear-spin h-full w-full" /></div>
         <div className="container-x grid items-center gap-10 py-14 md:py-20 lg:grid-cols-[1.15fr_0.85fr]">
           <div>
-            <p className="hero-in eyebrow" style={{ "--d": "0ms" } as React.CSSProperties}>Premium auto parts</p>
-            <h1 className="mt-4 text-[clamp(2.8rem,8vw,5.4rem)]">
+            <p className="hero-in eyebrow" style={{ "--d": "0ms" } as React.CSSProperties}>Premium auto parts · Kariakoo, Dar es Salaam</p>
+            <h1 className="mt-4 text-[clamp(2.4rem,6.6vw,4.7rem)] leading-[1.04]">
               {headline.map((line, i) => (
                 <span key={line} className="hero-in block" style={{ "--d": `${120 + i * 140}ms` } as React.CSSProperties}>
                   {i === 1 ? <span className="text-brand">{line}</span> : line}
@@ -74,7 +74,7 @@ export default async function Home() {
             [stats.parts, "parts listed"],
             [stats.categories, "categories"],
             [VEHICLE_BRANDS.length, "vehicle brands"],
-            [2, "contact lines"],
+            [stats.priced, "parts with prices"],
           ].map(([n, label]) => (
             <div key={label as string}>
               <CountUp to={n as number} className="display block text-4xl text-brand" />

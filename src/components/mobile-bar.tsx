@@ -8,7 +8,7 @@ import { CartBadge } from "./cart-link";
 export function MobileBar() {
   const path = usePathname();
   if (path.startsWith("/admin")) return null;
-  const item = "relative flex flex-1 flex-col items-center justify-center gap-0.5 py-2 text-[11px] font-bold uppercase";
+  const item = "relative flex flex-1 flex-col items-center justify-center gap-0.5 py-2 text-[11px] font-semibold";
   const on = (p: string) => (path === p ? "text-brand" : "text-ink");
   return (
     <nav aria-label="Quick actions" className="fixed inset-x-0 bottom-0 z-40 flex border-t border-line bg-white pb-[env(safe-area-inset-bottom)] md:hidden no-print">

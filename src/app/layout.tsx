@@ -1,7 +1,12 @@
 import type { Metadata, Viewport } from "next";
+import { Inter, JetBrains_Mono, Sora } from "next/font/google";
 import "./globals.css";
 import { CartProvider } from "@/lib/cart";
 import { SITE } from "@/lib/site";
+
+const sora = Sora({ subsets: ["latin"], weight: ["500", "600", "700", "800"], variable: "--font-sora", display: "swap" });
+const inter = Inter({ subsets: ["latin"], variable: "--font-inter", display: "swap" });
+const mono = JetBrains_Mono({ subsets: ["latin"], weight: ["500", "700"], variable: "--font-mono", display: "swap" });
 
 export const dynamic = "force-dynamic";
 
@@ -16,15 +21,7 @@ export const viewport: Viewport = { width: "device-width", initialScale: 1, them
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
-      <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
-        <link
-          rel="stylesheet"
-          href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Inter:wght@400;500;700&display=swap"
-        />
-      </head>
+    <html lang="en" className={`${sora.variable} ${inter.variable} ${mono.variable}`}>
       <body>
         <CartProvider>
           {children}

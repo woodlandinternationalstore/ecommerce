@@ -10,7 +10,6 @@ import { AddToCart } from "@/components/add-to-cart";
 import { EnquireButton, Price, ProductImage, StockBadge } from "@/components/product-bits";
 import { ProductCard } from "@/components/product-card";
 import { RecentlyViewed } from "@/components/recently-viewed";
-import { Tilt } from "@/components/motion";
 
 type Props = { params: Promise<{ slug: string }> };
 
@@ -65,9 +64,9 @@ export default async function ProductPage({ params }: Props) {
 
       <div className="mt-4 grid gap-8 md:grid-cols-2">
         <div>
-          <Tilt max={6}>
-            <ProductImage src={gallery[0]?.url ?? null} alt={p.name} className="h-72 w-full rounded-2xl border border-line shadow-[0_30px_50px_-30px_rgba(23,24,27,0.45)] sm:h-96" />
-          </Tilt>
+          <div className="pimg group overflow-hidden rounded-2xl border border-line bg-white shadow-[0_30px_50px_-34px_rgba(23,24,27,0.45)]">
+            <ProductImage src={gallery[0]?.url ?? null} alt={p.name} className="h-72 w-full p-4 sm:h-96" />
+          </div>
           {gallery.length > 1 && (
             <div className="mt-2 grid grid-cols-4 gap-2">
               {gallery.slice(1, 9).map((g) => (

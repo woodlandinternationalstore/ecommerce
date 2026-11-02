@@ -16,8 +16,8 @@ export function Logo({ light = false, size = 52 }: { light?: boolean; size?: num
         style={{ height: size * 0.935, width: size }}
       />
       <span className="flex flex-col">
-        <span className="display text-[24px] text-brand">WOODLAND</span>
-        <span className={`display text-[10.5px] tracking-[0.2em] ${light ? "text-white" : "text-ink"}`}>INTERNATIONAL STORE</span>
+        <span className="display text-[22px] tracking-tight text-brand">WOODLAND</span>
+        <span className={`text-[9.5px] font-semibold uppercase tracking-[0.24em] ${light ? "text-white" : "text-ink"}`}>International Store</span>
       </span>
     </Link>
   );
@@ -40,7 +40,7 @@ export function Header() {
         <Logo />
         <nav className="ml-6 hidden items-center gap-1 lg:flex" aria-label="Main">
           {NAV.map((n) => (
-            <Link key={n.href} href={n.href} className="group relative whitespace-nowrap rounded-md px-3 py-2 text-sm font-bold uppercase tracking-wide">
+            <Link key={n.href} href={n.href} className="group relative whitespace-nowrap rounded-md px-3 py-2 text-sm font-semibold">
               {n.label}
               <span className="absolute inset-x-3 -bottom-0.5 h-0.5 origin-left scale-x-0 bg-brand transition-transform duration-300 group-hover:scale-x-100" />
             </Link>
@@ -60,11 +60,11 @@ export function Header() {
             </summary>
             <div className="absolute right-0 top-12 z-50 w-64 rounded-xl border border-line bg-white p-2 shadow-2xl">
               {[...NAV, { href: "/about", label: "About Woodland" }, { href: "/faq", label: "FAQ" }].map((n) => (
-                <Link key={n.href} href={n.href} className="block rounded-lg px-3 py-3 text-sm font-bold uppercase hover:bg-surface">
+                <Link key={n.href} href={n.href} className="block rounded-lg px-3 py-3 text-sm font-semibold hover:bg-surface">
                   {n.label}
                 </Link>
               ))}
-              <a href={`tel:+${SITE.whatsapp}`} className="block rounded-lg px-3 py-3 text-sm font-bold uppercase hover:bg-surface">
+              <a href={`tel:+${SITE.whatsapp}`} className="block rounded-lg px-3 py-3 text-sm font-semibold hover:bg-surface">
                 Call {SITE.whatsappDisplay}
               </a>
             </div>
