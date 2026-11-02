@@ -1,5 +1,5 @@
-import { all } from "./db";
-import { effectiveStock, normalise, PUBLIC_WHERE, type Product } from "./catalog";
+import { all, get } from "./db";
+import { normalise, PUBLIC_WHERE, type Product } from "./catalog";
 
 export type SearchParams = {
   q?: string;
@@ -31,11 +31,19 @@ export function looksLikePartNumber(q: string) {
   return t.length >= 5 && /\d/.test(t) && /^[A-Za-z0-9][A-Za-z0-9\-/._ ]*$/.test(t) && t.split(/\s+/).length <= 2;
 }
 
+const LIST_COLS = `p.id, p.name, p.slug, p.category_id, p.brand, p.oem_number, p.description, p.main_image, p.condition, p.authenticity,
+  p.unit, p.price_tzs, p.previous_price_tzs, p.price_mode, p.price_message, p.stock_qty, p.stock_status, p.low_stock_threshold,
+  p.track_stock, p.allow_enquiry_oos, p.featured, p.published, p.archived, p.is_demo, p.created_at, p.updated_at, '' AS search_text,
+  c.name AS category_name, c.slug AS category_slug`;
+
+const AVAILABLE_SQL = "((p.stock_qty IS NULL AND p.stock_status IN ('in_stock','low_stock')) OR p.stock_qty > 0)";
+
 export async function searchProducts(params: SearchParams) {
   const where: string[] = [PUBLIC_WHERE];
   const args: unknown[] = [];
+  const tokens = tokenize(params.q ?? "");
 
-  for (const tok of tokenize(params.q ?? "")) {
+  for (const tok of tokens) {
     const n = normalise(tok);
     if (n) {
       where.push("(p.search_text LIKE ? OR p.norm_text LIKE ?)");
@@ -65,20 +73,27 @@ export async function searchProducts(params: SearchParams) {
     }
     where.push(sub + ")");
   }
+  if (params.avail === "available") where.push(AVAILABLE_SQL);
 
-  let rows = await all<Product>(
-    `SELECT p.*, c.name AS category_name, c.slug AS category_slug FROM products p
-     LEFT JOIN categories c ON c.id = p.category_id WHERE ${where.join(" AND ")} LIMIT 2000`,
-    ...args,
-  );
+  const from = `FROM products p LEFT JOIN categories c ON c.id = p.category_id WHERE ${where.join(" AND ")}`;
+  const pageSize = params.pageSize ?? 24;
+  const page = Math.max(1, params.page ?? 1);
+  const sort = params.sort ?? "relevance";
 
-  if (params.avail === "available") {
-    rows = rows.filter((p) => {
-      const s = effectiveStock(p);
-      return s === "in_stock" || s === "low_stock";
-    });
+  // Browsing without a query: let the database sort and page, so large catalogues stay fast.
+  if (!tokens.length) {
+    const order =
+      sort === "price_asc" ? "CASE WHEN p.price_mode = 'exact' AND p.price_tzs > 0 THEN 0 ELSE 1 END, p.price_tzs ASC, p.name"
+      : sort === "price_desc" ? "CASE WHEN p.price_mode = 'exact' AND p.price_tzs > 0 THEN 0 ELSE 1 END, p.price_tzs DESC, p.name"
+      : sort === "newest" ? "p.created_at DESC, p.id DESC"
+      : "p.name, p.id";
+    const total = ((await get<{ n: number }>(`SELECT COUNT(*) AS n ${from}`, ...args))?.n) ?? 0;
+    const items = await all<Product>(`SELECT ${LIST_COLS} ${from} ORDER BY ${order} LIMIT ? OFFSET ?`, ...args, pageSize, (page - 1) * pageSize);
+    return { total, page, pageSize, items };
   }
 
+  // With a query: relevance ranking (exact part number first) needs the matches in memory; sets are small.
+  const rows = await all<Product>(`SELECT ${LIST_COLS} ${from} LIMIT 600`, ...args);
   const qn = normalise(params.q ?? "");
   const score = (p: Product) => {
     if (!qn) return 9;
@@ -87,22 +102,18 @@ export async function searchProducts(params: SearchParams) {
     if (normalise(p.name).startsWith(qn)) return 2;
     return 5;
   };
-  const sort = params.sort ?? "relevance";
-  rows.sort((a, b) => {
+  rows.sort((x, y) => {
     if (sort === "price_asc" || sort === "price_desc") {
-      const pa = a.price_mode === "exact" && a.price_tzs ? a.price_tzs : Infinity;
-      const pb = b.price_mode === "exact" && b.price_tzs ? b.price_tzs : Infinity;
-      if (pa !== pb) return sort === "price_asc" ? pa - pb : pb - pa;
+      const px = x.price_mode === "exact" && x.price_tzs ? x.price_tzs : Infinity;
+      const py = y.price_mode === "exact" && y.price_tzs ? y.price_tzs : Infinity;
+      if (px !== py) return sort === "price_asc" ? px - py : py - px;
     } else if (sort === "newest") {
-      return b.created_at.localeCompare(a.created_at);
+      return y.created_at.localeCompare(x.created_at);
     } else if (sort === "name") {
-      return a.name.localeCompare(b.name);
+      return x.name.localeCompare(y.name);
     }
-    return score(a) - score(b) || a.name.localeCompare(b.name);
+    return score(x) - score(y) || x.name.localeCompare(y.name);
   });
-
-  const pageSize = params.pageSize ?? 24;
-  const page = Math.max(1, params.page ?? 1);
   return { total: rows.length, page, pageSize, items: rows.slice((page - 1) * pageSize, page * pageSize) };
 }
 

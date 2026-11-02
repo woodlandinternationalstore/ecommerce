@@ -34,7 +34,7 @@ export function Price({ p, large = false }: { p: Product; large?: boolean }) {
 export function ProductImage({ src, alt, className = "" }: { src: string | null; alt: string; className?: string }) {
   if (!src) {
     return (
-      <div className={`flex items-center justify-center bg-surface text-center text-xs font-bold uppercase tracking-wide text-silver ${className}`} role="img" aria-label={`${alt} (photo not yet available)`}>
+      <div className={`flex items-center justify-center bg-gradient-to-br from-surface to-white text-center text-xs font-bold uppercase tracking-wide text-silver ${className}`} role="img" aria-label={`${alt} (photo not yet available)`}>
         Photo coming soon
       </div>
     );

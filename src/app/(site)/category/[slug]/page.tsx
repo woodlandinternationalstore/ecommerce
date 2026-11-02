@@ -19,7 +19,7 @@ export default async function CategoryPage({ params, searchParams }: Props) {
   const sp = await searchParams;
   return (
     <div>
-      <section className="bg-ink text-white">
+      <section className="hero text-white">
         <div className="container-x py-8">
           <nav aria-label="Breadcrumb" className="text-xs text-silver">
             <Link href="/">Home</Link> / <Link href="/categories">Categories</Link> / {c.name}

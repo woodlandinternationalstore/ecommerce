@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { all, get } from "@/lib/db";
-import { compatOf, effectiveStock, PUBLIC_WHERE, type Product } from "@/lib/catalog";
+import { compatOf, effectiveStock, PUBLIC_WHERE, vehicleSummaries, type Product } from "@/lib/catalog";
 import { SITE, waLink } from "@/lib/site";
 import { AutoSubmitForm } from "@/components/auto-submit-form";
 import { ProductCard } from "@/components/product-card";
@@ -60,6 +60,7 @@ export default async function Finder({ searchParams }: { searchParams: Promise<S
     void effectiveStock;
   }
 
+  const finderVehicles = await vehicleSummaries((results ?? []).map((r) => r.p.id));
   const vehicleText = [make?.name, model?.name, gen?.name, year, engine].filter(Boolean).join(" ");
   const waText = `WOODLAND INTERNATIONAL STORE\nSPARE PART ENQUIRY\nVehicle: ${vehicleText || "-"}\nPart needed: ${part || "-"}\nPlease confirm availability and fitment.`;
   void get;
@@ -121,7 +122,7 @@ export default async function Finder({ searchParams }: { searchParams: Promise<S
             <div className="mt-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
               {results.map(({ p, confirmed }) => (
                 <div key={p.id}>
-                  <ProductCard p={p} />
+                  <ProductCard p={p} vehicle={finderVehicles.get(p.id)} />
                   {!confirmed && <p className="mt-1 text-xs font-bold text-brand">Fitment uncertain: please confirm with our sales team.</p>}
                 </div>
               ))}

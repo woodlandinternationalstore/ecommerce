@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import {
-  altNumbers, AUTH_LABEL, compatLabel, compatOf, effectiveStock, hasKnownPrice, maxOrderQty, productImages, publicProductBySlug, relatedProducts,
+  altNumbers, AUTH_LABEL, vehicleSummaries, compatLabel, compatOf, effectiveStock, hasKnownPrice, maxOrderQty, productImages, publicProductBySlug, relatedProducts,
 } from "@/lib/catalog";
 import { SITE, waLink } from "@/lib/site";
 import { buildProductEnquiry } from "@/lib/whatsapp";
@@ -10,6 +10,7 @@ import { AddToCart } from "@/components/add-to-cart";
 import { EnquireButton, Price, ProductImage, StockBadge } from "@/components/product-bits";
 import { ProductCard } from "@/components/product-card";
 import { RecentlyViewed } from "@/components/recently-viewed";
+import { Tilt } from "@/components/motion";
 
 type Props = { params: Promise<{ slug: string }> };
 
@@ -32,6 +33,7 @@ export default async function ProductPage({ params }: Props) {
   const alts = await altNumbers(p.id);
   const compat = await compatOf(p.id);
   const related = await relatedProducts(p);
+  const relatedVehicles = await vehicleSummaries(related.map((r) => r.id));
   const pageUrl = `${SITE.url}/product/${p.slug}`;
   const stock = effectiveStock(p);
   const enquiry = buildProductEnquiry({ name: p.name, partNumber: p.oem_number, qty: 1, url: pageUrl });
@@ -63,7 +65,9 @@ export default async function ProductPage({ params }: Props) {
 
       <div className="mt-4 grid gap-8 md:grid-cols-2">
         <div>
-          <ProductImage src={gallery[0]?.url ?? null} alt={p.name} className="h-72 w-full rounded-lg border border-line sm:h-96" />
+          <Tilt max={6}>
+            <ProductImage src={gallery[0]?.url ?? null} alt={p.name} className="h-72 w-full rounded-2xl border border-line shadow-[0_30px_50px_-30px_rgba(23,24,27,0.45)] sm:h-96" />
+          </Tilt>
           {gallery.length > 1 && (
             <div className="mt-2 grid grid-cols-4 gap-2">
               {gallery.slice(1, 9).map((g) => (
@@ -123,7 +127,7 @@ export default async function ProductPage({ params }: Props) {
       {related.length > 0 && (
         <section className="mt-12">
           <h2 className="text-3xl">Related products</h2>
-          <div className="mt-4 grid grid-cols-2 gap-3 lg:grid-cols-4">{related.map((r) => <ProductCard key={r.id} p={r} />)}</div>
+          <div className="mt-4 grid grid-cols-2 gap-3 lg:grid-cols-4">{related.map((r) => <ProductCard key={r.id} p={r} vehicle={relatedVehicles.get(r.id)} />)}</div>
         </section>
       )}
       <RecentlyViewed slug={p.slug} />

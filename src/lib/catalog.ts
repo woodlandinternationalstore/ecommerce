@@ -86,3 +86,31 @@ export async function setStock(productId: number, newQty: number, reason: string
 export const STOCK_REASONS = [
   "New Stock Received", "Sale", "Stock Correction", "Damaged Goods", "Returned Goods", "Manual Adjustment",
 ] as const;
+
+/** Real counts for the home page. */
+export async function publicStats() {
+  const row = await get<{ parts: number; priced: number }>(
+    `SELECT COUNT(*) AS parts, COUNT(*) FILTER (WHERE p.price_mode = 'exact' AND p.price_tzs > 0) AS priced
+     FROM products p LEFT JOIN categories c ON c.id = p.category_id WHERE ${PUBLIC_WHERE}`,
+  );
+  const cats = await get<{ n: number }>("SELECT COUNT(*) AS n FROM categories WHERE published = 1");
+  return { parts: row?.parts ?? 0, priced: row?.priced ?? 0, categories: cats?.n ?? 0 };
+}
+
+/** One query for many products: "Make Model Generation, ..." per product id. */
+export async function vehicleSummaries(ids: number[], max = 2): Promise<Map<number, string>> {
+  const out = new Map<number, string>();
+  if (!ids.length) return out;
+  const rows = await all<{ product_id: number; make: string; model: string; generation: string }>(
+    `SELECT product_id, make, model, generation FROM product_compat WHERE product_id IN (${ids.map(() => "?").join(",")}) ORDER BY id`, ...ids,
+  );
+  const by = new Map<number, string[]>();
+  for (const r of rows) {
+    const label = [r.make, r.model, r.generation].filter(Boolean).join(" ");
+    const list = by.get(r.product_id) ?? [];
+    if (!list.includes(label)) list.push(label);
+    by.set(r.product_id, list);
+  }
+  for (const [id, list] of by) out.set(id, list.length > max ? `${list.slice(0, max).join(", ")} +${list.length - max} more` : list.join(", "));
+  return out;
+}

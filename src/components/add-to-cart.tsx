@@ -46,8 +46,8 @@ export function AddToCart({
           {maxQty !== null && <span className="text-xs text-muted">Max {maxQty}</span>}
         </div>
       )}
-      <button type="button" className={`btn btn-red ${compact ? "btn-sm w-full" : "w-full"}`} onClick={add} disabled={inCart >= limit}>
-        {inCart >= limit ? "Maximum in cart" : "Add to cart"}
+      <button type="button" className={`btn btn-red ${compact ? "btn-sm w-full !px-2" : "w-full"}`} onClick={add} disabled={inCart >= limit}>
+        {inCart >= limit ? "Maximum in cart" : compact ? (<><span className="sm:hidden">Add</span><span className="hidden sm:inline">Add to cart</span></>) : "Add to cart"}
       </button>
       {added && (
         <p role="status" className="text-sm font-bold text-green-700">

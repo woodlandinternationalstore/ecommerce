@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { all } from "@/lib/db";
-import { categories } from "@/lib/catalog";
+import { categories, vehicleSummaries } from "@/lib/catalog";
 import { filterOptions, searchProducts, looksLikePartNumber, type SearchParams } from "@/lib/search";
 import { SITE, waLink } from "@/lib/site";
 import { ProductCard } from "./product-card";
@@ -13,6 +13,7 @@ export async function ProductList({ sp, basePath, fixedCategory }: { sp: Sp; bas
     sort: sp.sort, page: Number(sp.page) || 1,
   };
   const res = await searchProducts(params);
+  const vehicles = await vehicleSummaries(res.items.map((p) => p.id));
   const { brands } = await filterOptions();
   const makes = (await all<{ name: string }>("SELECT name FROM vehicle_makes ORDER BY name")).map((m) => m.name);
   const models = sp.make
@@ -99,7 +100,7 @@ export async function ProductList({ sp, basePath, fixedCategory }: { sp: Sp; bas
           <NoResults q={sp.q} exact={looksLikePartNumber(sp.q ?? "")} />
         ) : (
           <div className="grid grid-cols-2 gap-3 xl:grid-cols-3">
-            {res.items.map((p) => <ProductCard key={p.id} p={p} />)}
+            {res.items.map((p) => <ProductCard key={p.id} p={p} vehicle={vehicles.get(p.id)} />)}
           </div>
         )}
         {pages > 1 && (
