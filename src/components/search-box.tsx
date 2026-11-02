@@ -5,7 +5,7 @@ import { useEffect, useId, useRef, useState } from "react";
 
 type Hit = { name: string; slug: string; oem: string; brand: string };
 
-export function SearchBox({ initial = "", autoFocus = false }: { initial?: string; autoFocus?: boolean }) {
+export function SearchBox({ initial = "", autoFocus = false, button = false }: { initial?: string; autoFocus?: boolean; button?: boolean }) {
   const router = useRouter();
   const [q, setQ] = useState(initial);
   const [hits, setHits] = useState<Hit[]>([]);
@@ -51,7 +51,7 @@ export function SearchBox({ initial = "", autoFocus = false }: { initial?: strin
       }}
     >
       <input
-        className="field pr-12"
+        className={`field ${button ? "pr-16" : "pr-12"}`}
         type="search"
         name="q"
         value={q}
@@ -66,7 +66,7 @@ export function SearchBox({ initial = "", autoFocus = false }: { initial?: strin
         }}
         onFocus={() => setOpen(true)}
       />
-      <button type="submit" aria-label="Search" className="absolute right-0 top-0 flex h-[46px] w-11 items-center justify-center text-brand">
+      <button type="submit" aria-label="Search" className={button ? "absolute right-0 top-0 flex h-[48px] w-14 items-center justify-center rounded-r-lg bg-brand text-white transition hover:bg-brand-dark" : "absolute right-0 top-0 flex h-[48px] w-11 items-center justify-center text-brand"}>
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg>
       </button>
       {open && hits.length > 0 && (

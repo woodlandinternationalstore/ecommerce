@@ -8,6 +8,11 @@ Spare parts catalogue with a cart and WhatsApp ordering, plus a staff dashboard.
 - Staff dashboard at `/admin`: products (images, prices, stock log, compatibility), categories, vehicles, orders (status, notes, confirmed prices, delivery fee, final total, print, CSV export), enquiries, CSV import with preview and CSV export, staff users and roles, settings (hours, map).
 - Roles (enforced on the server in every page and action): Super Admin (everything), Sales Staff (orders, enquiries), Inventory Staff (products, stock, categories, vehicles, import; not prices).
 
+## Catalogue notes
+- Parts, part numbers, selling prices and reference images were copied from the Brothers Auto catalogue at the owner's request. Buying prices, stock counts and supplier notes were not copied. Stock shows "Availability to be confirmed" until staff enter quantities.
+- Part types were filed into categories by name (for example "Brake Pad" under Brake Systems). Check them in Admin > Products.
+- The home page artwork (public/brand/hero.webp and hero-m.webp) came from the owner's design mockup and shows Toyota vehicles and Toyota-branded boxes. Replace it with Woodland's own photography when available.
+
 ## Not done / honest limits
 - No logo or product photos were supplied. The header uses a text wordmark and products show "Photo coming soon" until photos are uploaded in the admin.
 - No invented prices, stock, hours, map location or certifications. Demo products (admin > Products > Add DEMO products) are labelled DEMO and removable.

@@ -28,7 +28,7 @@
   --color-wa: var(--wa);
   --color-wa-dark: var(--wa-dark);
   --font-sans: var(--font-inter), system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  --font-display: var(--font-sora), var(--font-inter), system-ui, sans-serif;
+  --font-display: var(--font-barlow), "Arial Narrow", system-ui, sans-serif;
   --font-mono: var(--font-mono), ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
 }
 
@@ -44,8 +44,8 @@ body {
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
 }
-h1, h2, h3 { font-family: var(--font-display); letter-spacing: -0.025em; font-weight: 700; line-height: 1.08; text-wrap: balance; }
-.display { font-family: var(--font-display); letter-spacing: -0.02em; font-weight: 800; line-height: 1.02; }
+h1, h2, h3 { font-family: var(--font-display); font-style: italic; text-transform: uppercase; letter-spacing: -0.01em; font-weight: 800; line-height: 1.02; text-wrap: balance; }
+.display { font-family: var(--font-display); font-style: italic; text-transform: uppercase; letter-spacing: -0.01em; font-weight: 800; line-height: 1; }
 .partno { font-family: var(--font-mono); font-weight: 700; letter-spacing: -0.01em; overflow-wrap: anywhere; }
 ::selection { background: var(--red); color: #fff; }
 
@@ -55,7 +55,7 @@ h1, h2, h3 { font-family: var(--font-display); letter-spacing: -0.025em; font-we
 /* ---------- buttons ---------- */
 .btn {
   position: relative; overflow: hidden; display: inline-flex; align-items: center; justify-content: center; gap: 8px;
-  min-height: 46px; padding: 0 22px; font-weight: 650; font-size: 0.92rem; letter-spacing: -0.005em;
+  min-height: 46px; padding: 0 22px; font-weight: 800; font-size: 0.86rem; letter-spacing: 0.03em; text-transform: uppercase;
   border-radius: 8px; border: 2px solid transparent; cursor: pointer; text-align: center;
   transition: transform 0.25s var(--ease), box-shadow 0.25s var(--ease), background 0.2s, color 0.2s, border-color 0.2s;
 }
@@ -156,3 +156,14 @@ h1, h2, h3 { font-family: var(--font-display); letter-spacing: -0.025em; font-we
 }
 
 .hero .eyebrow, .bg-ink .eyebrow { color: #ff6f86; }
+
+/* ---------- mockup layout pieces ---------- */
+.bar-title { position: relative; padding-left: 14px; }
+.bar-title::before { content: ""; position: absolute; left: 0; top: 8%; bottom: 8%; width: 5px; border-radius: 2px; background: var(--red); }
+.topbar { background: #1a1f2b; color: #fff; }
+.rednav { background: linear-gradient(180deg, #d4122f, var(--red) 60%, var(--red-dark)); color: #fff; }
+.rednav a, .rednav summary { text-transform: uppercase; font-weight: 800; font-size: 0.78rem; letter-spacing: 0.02em; }
+.hero-light { position: relative; isolation: isolate; overflow: hidden; background: linear-gradient(180deg, #ffffff 0%, #eef1f6 100%); }
+.fade-left { -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 18%); mask-image: linear-gradient(90deg, transparent 0, #000 18%); }
+.fade-top { -webkit-mask-image: linear-gradient(180deg, transparent 0, #000 14%); mask-image: linear-gradient(180deg, transparent 0, #000 14%); }
+.slant-red { background: linear-gradient(100deg, transparent 0 8%, var(--red) 8.2% 100%); }
