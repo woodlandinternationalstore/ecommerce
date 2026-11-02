@@ -31,17 +31,17 @@ export function looksLikePartNumber(q: string) {
   return t.length >= 5 && /\d/.test(t) && /^[A-Za-z0-9][A-Za-z0-9\-/._ ]*$/.test(t) && t.split(/\s+/).length <= 2;
 }
 
-export function searchProducts(params: SearchParams) {
+export async function searchProducts(params: SearchParams) {
   const where: string[] = [PUBLIC_WHERE];
   const args: unknown[] = [];
 
   for (const tok of tokenize(params.q ?? "")) {
     const n = normalise(tok);
     if (n) {
-      where.push("(p.search_text LIKE ? ESCAPE '\\' OR p.norm_text LIKE ? ESCAPE '\\')");
+      where.push("(p.search_text LIKE ? OR p.norm_text LIKE ?)");
       args.push(`%${esc(tok)}%`, `%${esc(n)}%`);
     } else {
-      where.push("p.search_text LIKE ? ESCAPE '\\'");
+      where.push("p.search_text LIKE ?");
       args.push(`%${esc(tok)}%`);
     }
   }
@@ -66,7 +66,7 @@ export function searchProducts(params: SearchParams) {
     where.push(sub + ")");
   }
 
-  let rows = all<Product>(
+  let rows = await all<Product>(
     `SELECT p.*, c.name AS category_name, c.slug AS category_slug FROM products p
      LEFT JOIN categories c ON c.id = p.category_id WHERE ${where.join(" AND ")} LIMIT 2000`,
     ...args,
@@ -106,18 +106,20 @@ export function searchProducts(params: SearchParams) {
   return { total: rows.length, page, pageSize, items: rows.slice((page - 1) * pageSize, page * pageSize) };
 }
 
-export function suggest(q: string, limit = 8) {
+export async function suggest(q: string, limit = 8) {
   if (q.trim().length < 2) return [];
-  return searchProducts({ q, pageSize: limit }).items.map((p) => ({
+  return (await searchProducts({ q, pageSize: limit })).items.map((p) => ({
     name: p.name, slug: p.slug, oem: p.oem_number, brand: p.brand,
   }));
 }
 
-export function filterOptions() {
+export async function filterOptions() {
   return {
-    brands: all<{ brand: string }>(
-      `SELECT DISTINCT p.brand FROM products p LEFT JOIN categories c ON c.id = p.category_id
-       WHERE ${PUBLIC_WHERE} AND p.brand != '' ORDER BY p.brand`,
+    brands: (
+      await all<{ brand: string }>(
+        `SELECT DISTINCT p.brand FROM products p LEFT JOIN categories c ON c.id = p.category_id
+         WHERE ${PUBLIC_WHERE} AND p.brand != '' ORDER BY p.brand`,
+      )
     ).map((r) => r.brand),
   };
 }

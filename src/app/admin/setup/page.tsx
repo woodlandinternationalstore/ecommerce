@@ -6,7 +6,7 @@ import { setupOwner } from "../auth-actions";
 export const metadata: Metadata = { title: "Owner setup", robots: { index: false } };
 
 export default async function Setup({ searchParams }: { searchParams: Promise<{ error?: string }> }) {
-  if (userCount() > 0) notFound();
+  if (await userCount() > 0) notFound();
   const { error } = await searchParams;
   const needsToken = !!process.env.SETUP_TOKEN;
   return (

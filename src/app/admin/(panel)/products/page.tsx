@@ -29,14 +29,14 @@ export default async function Products({ searchParams }: { searchParams: Promise
 
   const page = Math.max(1, Number(sp.page) || 1);
   const size = 25;
-  const total = get<{ n: number }>(`SELECT COUNT(*) n FROM products p WHERE ${where.join(" AND ")}`, ...args)!.n;
-  const rows = all<Product>(
+  const total = (await get<{ n: number }>(`SELECT COUNT(*) n FROM products p WHERE ${where.join(" AND ")}`, ...args))!.n;
+  const rows = await all<Product>(
     `SELECT p.*, c.name AS category_name FROM products p LEFT JOIN categories c ON c.id = p.category_id
      WHERE ${where.join(" AND ")} ORDER BY p.updated_at DESC, p.id DESC LIMIT ? OFFSET ?`,
     ...args, size, (page - 1) * size,
   );
-  const cats = categories(false);
-  const hasDemo = get<{ n: number }>("SELECT COUNT(*) n FROM products WHERE is_demo = 1")!.n > 0;
+  const cats = await categories(false);
+  const hasDemo = (await get<{ n: number }>("SELECT COUNT(*) n FROM products WHERE is_demo = 1"))!.n > 0;
   const qs = (over: Record<string, string>) => `?${new URLSearchParams({ ...(sp.q ? { q: sp.q } : {}), ...(sp.cat ? { cat: sp.cat } : {}), ...(st ? { status: st } : {}), ...over }).toString()}`;
 
   return (

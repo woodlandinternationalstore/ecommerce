@@ -5,7 +5,7 @@ import { deleteCategory, saveCategory } from "./actions";
 export default async function Categories({ searchParams }: { searchParams: Promise<{ error?: string; saved?: string }> }) {
   await requirePerm("categories");
   const sp = await searchParams;
-  const cats = categories(false);
+  const cats = await categories(false);
   const Form = ({ c }: { c?: (typeof cats)[number] }) => (
     <form action={saveCategory} encType="multipart/form-data" className="card grid gap-3 p-4 md:grid-cols-2">
       {c && <input type="hidden" name="id" value={c.id} />}

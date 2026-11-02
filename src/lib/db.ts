@@ -1,153 +1,110 @@
-import { DatabaseSync } from "node:sqlite";
+import { AsyncLocalStorage } from "node:async_hooks";
 import fs from "node:fs";
 import path from "node:path";
+import { Pool, types } from "pg";
 
-const SCHEMA = `
-CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT NOT NULL);
-CREATE TABLE IF NOT EXISTS users (
-  id INTEGER PRIMARY KEY, email TEXT NOT NULL UNIQUE, name TEXT NOT NULL, password_hash TEXT NOT NULL,
-  role TEXT NOT NULL CHECK (role IN ('super_admin','sales','inventory')), active INTEGER NOT NULL DEFAULT 1,
-  created_at TEXT NOT NULL DEFAULT (datetime('now')));
-CREATE TABLE IF NOT EXISTS sessions (
-  token_hash TEXT PRIMARY KEY, user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE, expires_at TEXT NOT NULL);
-CREATE TABLE IF NOT EXISTS categories (
-  id INTEGER PRIMARY KEY, name TEXT NOT NULL, slug TEXT NOT NULL UNIQUE, description TEXT NOT NULL DEFAULT '',
-  image_url TEXT, published INTEGER NOT NULL DEFAULT 1, display_order INTEGER NOT NULL DEFAULT 0);
-CREATE TABLE IF NOT EXISTS vehicle_makes (id INTEGER PRIMARY KEY, name TEXT NOT NULL UNIQUE);
-CREATE TABLE IF NOT EXISTS vehicle_models (
-  id INTEGER PRIMARY KEY, make_id INTEGER NOT NULL REFERENCES vehicle_makes(id) ON DELETE CASCADE, name TEXT NOT NULL,
-  UNIQUE (make_id, name));
-CREATE TABLE IF NOT EXISTS vehicle_generations (
-  id INTEGER PRIMARY KEY, model_id INTEGER NOT NULL REFERENCES vehicle_models(id) ON DELETE CASCADE, name TEXT NOT NULL,
-  chassis_code TEXT, year_from INTEGER, year_to INTEGER, engines TEXT NOT NULL DEFAULT '');
-CREATE TABLE IF NOT EXISTS products (
-  id INTEGER PRIMARY KEY, name TEXT NOT NULL, slug TEXT NOT NULL UNIQUE,
-  category_id INTEGER REFERENCES categories(id) ON DELETE SET NULL,
-  brand TEXT NOT NULL DEFAULT '', oem_number TEXT NOT NULL DEFAULT '', description TEXT NOT NULL DEFAULT '',
-  main_image TEXT, condition TEXT NOT NULL DEFAULT 'new', authenticity TEXT NOT NULL DEFAULT 'unverified',
-  unit TEXT NOT NULL DEFAULT 'piece',
-  price_tzs INTEGER CHECK (price_tzs IS NULL OR price_tzs > 0), previous_price_tzs INTEGER,
-  price_mode TEXT NOT NULL DEFAULT 'request' CHECK (price_mode IN ('exact','request','message')),
-  price_message TEXT NOT NULL DEFAULT '',
-  stock_qty INTEGER CHECK (stock_qty IS NULL OR stock_qty >= 0),
-  stock_status TEXT NOT NULL DEFAULT 'tbc' CHECK (stock_status IN ('in_stock','low_stock','out_of_stock','tbc')),
-  low_stock_threshold INTEGER NOT NULL DEFAULT 3, track_stock INTEGER NOT NULL DEFAULT 1,
-  allow_enquiry_oos INTEGER NOT NULL DEFAULT 1,
-  featured INTEGER NOT NULL DEFAULT 0, published INTEGER NOT NULL DEFAULT 0, archived INTEGER NOT NULL DEFAULT 0,
-  is_demo INTEGER NOT NULL DEFAULT 0, search_text TEXT NOT NULL DEFAULT '', norm_text TEXT NOT NULL DEFAULT '',
-  created_at TEXT NOT NULL DEFAULT (datetime('now')), updated_at TEXT NOT NULL DEFAULT (datetime('now')));
-CREATE INDEX IF NOT EXISTS idx_products_oem ON products(oem_number);
-CREATE INDEX IF NOT EXISTS idx_products_name ON products(name);
-CREATE INDEX IF NOT EXISTS idx_products_category ON products(category_id);
-CREATE TABLE IF NOT EXISTS product_images (
-  id INTEGER PRIMARY KEY, product_id INTEGER NOT NULL REFERENCES products(id) ON DELETE CASCADE,
-  url TEXT NOT NULL, alt TEXT NOT NULL DEFAULT '', sort INTEGER NOT NULL DEFAULT 0);
-CREATE TABLE IF NOT EXISTS product_alt_numbers (
-  id INTEGER PRIMARY KEY, product_id INTEGER NOT NULL REFERENCES products(id) ON DELETE CASCADE, part_number TEXT NOT NULL);
-CREATE INDEX IF NOT EXISTS idx_alt_pn ON product_alt_numbers(part_number);
-CREATE TABLE IF NOT EXISTS product_compat (
-  id INTEGER PRIMARY KEY, product_id INTEGER NOT NULL REFERENCES products(id) ON DELETE CASCADE,
-  make TEXT NOT NULL, model TEXT NOT NULL, generation TEXT NOT NULL DEFAULT '', chassis_code TEXT NOT NULL DEFAULT '',
-  year_from INTEGER, year_to INTEGER, engine TEXT NOT NULL DEFAULT '');
-CREATE INDEX IF NOT EXISTS idx_compat ON product_compat(make, model);
-CREATE TABLE IF NOT EXISTS orders (
-  id INTEGER PRIMARY KEY, ref TEXT NOT NULL UNIQUE, access_token TEXT NOT NULL, idempotency_key TEXT NOT NULL UNIQUE,
-  customer_name TEXT NOT NULL, whatsapp TEXT NOT NULL, alt_phone TEXT NOT NULL DEFAULT '', email TEXT NOT NULL DEFAULT '',
-  delivery_method TEXT NOT NULL, delivery_location TEXT NOT NULL DEFAULT '', region TEXT NOT NULL DEFAULT '',
-  contact_method TEXT NOT NULL DEFAULT 'whatsapp', vehicle_info TEXT NOT NULL DEFAULT '', notes TEXT NOT NULL DEFAULT '',
-  known_subtotal INTEGER NOT NULL DEFAULT 0, unknown_count INTEGER NOT NULL DEFAULT 0,
-  delivery_fee INTEGER, final_total INTEGER,
-  status TEXT NOT NULL DEFAULT 'pending_confirmation', handoff_status TEXT NOT NULL DEFAULT 'not_opened',
-  created_at TEXT NOT NULL DEFAULT (datetime('now')), updated_at TEXT NOT NULL DEFAULT (datetime('now')));
-CREATE INDEX IF NOT EXISTS idx_orders_created ON orders(created_at);
-CREATE TABLE IF NOT EXISTS order_items (
-  id INTEGER PRIMARY KEY, order_id INTEGER NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
-  product_id INTEGER REFERENCES products(id) ON DELETE SET NULL,
-  name TEXT NOT NULL, part_number TEXT NOT NULL DEFAULT '', vehicle TEXT NOT NULL DEFAULT '',
-  qty INTEGER NOT NULL CHECK (qty > 0), unit_price INTEGER, line_total INTEGER, confirmed_unit_price INTEGER);
-CREATE TABLE IF NOT EXISTS order_status_history (
-  id INTEGER PRIMARY KEY, order_id INTEGER NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
-  status TEXT NOT NULL, note TEXT NOT NULL DEFAULT '', user_id INTEGER REFERENCES users(id),
-  created_at TEXT NOT NULL DEFAULT (datetime('now')));
-CREATE TABLE IF NOT EXISTS order_notes (
-  id INTEGER PRIMARY KEY, order_id INTEGER NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
-  user_id INTEGER REFERENCES users(id), note TEXT NOT NULL, created_at TEXT NOT NULL DEFAULT (datetime('now')));
-CREATE TABLE IF NOT EXISTS stock_movements (
-  id INTEGER PRIMARY KEY, product_id INTEGER NOT NULL REFERENCES products(id) ON DELETE CASCADE,
-  prev_qty INTEGER, new_qty INTEGER NOT NULL, diff INTEGER, reason TEXT NOT NULL,
-  user_id INTEGER REFERENCES users(id), created_at TEXT NOT NULL DEFAULT (datetime('now')));
-CREATE TABLE IF NOT EXISTS enquiries (
-  id INTEGER PRIMARY KEY, ref TEXT NOT NULL UNIQUE, access_token TEXT NOT NULL, name TEXT NOT NULL, phone TEXT NOT NULL,
-  part TEXT NOT NULL DEFAULT '', vehicle TEXT NOT NULL DEFAULT '', message TEXT NOT NULL,
-  status TEXT NOT NULL DEFAULT 'new', created_at TEXT NOT NULL DEFAULT (datetime('now')));
-`;
+// Postgres returns bigint (COUNT) and numeric (SUM) as strings; this app only handles small whole numbers.
+types.setTypeParser(20, (v) => Number(v));
+types.setTypeParser(1700, (v) => Number(v));
 
-type G = typeof globalThis & { __woodlandDb?: DatabaseSync };
+type Result = { rows: Record<string, unknown>[]; rowCount: number };
+type Queryable = { query(text: string, params?: unknown[]): Promise<Result> };
+type Driver = Queryable & { transaction<T>(fn: (q: Queryable) => Promise<T>): Promise<T> };
 
-export function db(): DatabaseSync {
-  const g = globalThis as G;
-  if (g.__woodlandDb) return g.__woodlandDb;
-  const file = process.env.DATABASE_FILE === ":memory:" ? ":memory:" : path.resolve(process.env.DATABASE_FILE ?? "data/woodland.db");
-  if (file !== ":memory:") fs.mkdirSync(path.dirname(file), { recursive: true });
-  const d = new DatabaseSync(file);
-  d.exec("PRAGMA journal_mode = WAL; PRAGMA foreign_keys = ON; PRAGMA busy_timeout = 5000;");
-  d.exec(SCHEMA);
-  g.__woodlandDb = d;
-  seedReference(d);
-  return d;
-}
+const txStore = new AsyncLocalStorage<Queryable>();
+type G = typeof globalThis & { __woodlandDriver?: Promise<Driver> };
 
-/** Run fn inside a transaction; rolls back on throw. */
-export function tx<T>(fn: () => T): T {
-  const d = db();
-  d.exec("BEGIN IMMEDIATE");
-  try {
-    const r = fn();
-    d.exec("COMMIT");
-    return r;
-  } catch (e) {
-    d.exec("ROLLBACK");
-    throw e;
+async function makeDriver(): Promise<Driver> {
+  if (process.env.DB_DRIVER === "pglite") {
+    // In-process Postgres used by the automated tests only.
+    const { PGlite } = await import("@electric-sql/pglite");
+    const lite = new PGlite();
+    const dir = path.resolve("db/migrations");
+    for (const f of fs.readdirSync(dir).filter((n) => n.endsWith(".sql")).sort()) await lite.exec(fs.readFileSync(path.join(dir, f), "utf8"));
+    const wrap = (q: { query: (t: string, p?: unknown[]) => Promise<{ rows: unknown[]; affectedRows?: number }> }): Queryable => ({
+      query: async (t, p) => {
+        const r = await q.query(t, p);
+        return { rows: r.rows as Record<string, unknown>[], rowCount: r.affectedRows ?? r.rows.length };
+      },
+    });
+    return { ...wrap(lite), transaction: (fn) => lite.transaction((t) => fn(wrap(t))) };
   }
+
+  const url = process.env.DATABASE_URL;
+  if (!url) throw new Error("DATABASE_URL is not set. Add your Neon connection string (see .env.example).");
+  const pool = new Pool({ connectionString: url, max: 5, idleTimeoutMillis: 20_000 });
+  const wrap = (q: { query: (t: string, p?: unknown[]) => Promise<{ rows: unknown[]; rowCount: number | null }> }): Queryable => ({
+    query: async (t, p) => {
+      const r = await q.query(t, p);
+      return { rows: r.rows as Record<string, unknown>[], rowCount: r.rowCount ?? 0 };
+    },
+  });
+  return {
+    ...wrap(pool),
+    async transaction(fn) {
+      const client = await pool.connect();
+      try {
+        await client.query("BEGIN");
+        const out = await fn(wrap(client));
+        await client.query("COMMIT");
+        return out;
+      } catch (e) {
+        await client.query("ROLLBACK").catch(() => {});
+        throw e;
+      } finally {
+        client.release();
+      }
+    },
+  };
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type Row = Record<string, any>;
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type P = any[];
-export const all = <T = Row>(sql: string, ...p: P) => db().prepare(sql).all(...p) as T[];
-export const get = <T = Row>(sql: string, ...p: P) => db().prepare(sql).get(...p) as T | undefined;
-export const run = (sql: string, ...p: P) => db().prepare(sql).run(...p);
-
-export function getSetting(key: string, fallback = ""): string {
-  return get<{ value: string }>("SELECT value FROM settings WHERE key = ?", key)?.value ?? fallback;
-}
-export function setSetting(key: string, value: string) {
-  run("INSERT INTO settings(key, value) VALUES(?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value", key, value);
+function driver(): Promise<Driver> {
+  const g = globalThis as G;
+  return (g.__woodlandDriver ??= makeDriver());
 }
 
-const CATEGORIES: [string, string][] = [
-  ["Engine Parts", "Components for the engine block, head, timing and fuel-air systems."],
-  ["Suspension Parts", "Lower arms, bushes, shock absorbers, ball joints and links."],
-  ["Brake Systems", "Brake pads, discs, calipers, hoses and related parts."],
-  ["Filters & Lubricants", "Oil, air, fuel and cabin filters, plus engine oils and fluids."],
-  ["Electrical Parts", "Alternators, starters, sensors, switches and wiring components."],
-  ["Bearings", "Wheel, gearbox and engine bearings."],
-  ["Cooling Systems", "Radiators, water pumps, thermostats, hoses and fans."],
-  ["Transmission Parts", "Clutch, gearbox and drivetrain components."],
-  ["Lighting Systems", "Headlamps, tail lamps, indicators and bulbs."],
-  ["Body Parts", "Bumpers, grilles, mirrors, panels and trim."],
-  ["Steering Components", "Tie rod ends, racks, pumps and steering joints."],
-  ["Fuel System Components", "Fuel pumps, injectors, lines and filters."],
-  ["Wheel Hubs and Bearings", "Hub assemblies, wheel bearings and studs."],
-  ["Other Spare Parts", "Other automotive spare parts. Ask us if you cannot find yours."],
-];
+/** Convert ? placeholders to $1, $2, ... so queries stay readable. */
+function toPg(sql: string) {
+  let i = 0;
+  return sql.replace(/\?/g, () => `$${++i}`);
+}
 
-function seedReference(d: DatabaseSync) {
-  const n = (d.prepare("SELECT COUNT(*) n FROM categories").get() as { n: number }).n;
-  if (n > 0) return;
-  const cat = d.prepare("INSERT INTO categories(name, slug, description, display_order) VALUES(?,?,?,?)");
-  CATEGORIES.forEach(([name, desc], i) => cat.run(name, name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, ""), desc, i + 1));
-  const make = d.prepare("INSERT OR IGNORE INTO vehicle_makes(name) VALUES(?)");
-  for (const m of ["Toyota", "Nissan", "Ford", "Mitsubishi", "Foton", "GWM", "Isuzu"]) make.run(m);
+async function exec(sql: string, params: unknown[]): Promise<Result> {
+  const q = txStore.getStore() ?? (await driver());
+  return q.query(toPg(sql), params);
+}
+
+/** Run fn in one transaction. Every all/get/run/insert inside fn uses it. Rolls back if fn throws. */
+export async function tx<T>(fn: () => Promise<T>): Promise<T> {
+  if (txStore.getStore()) return fn(); // already inside a transaction
+  const d = await driver();
+  return d.transaction((q) => txStore.run(q, fn));
+}
+
+/** Serialise concurrent work (e.g. order numbering). Call inside tx(); released at commit. */
+export async function advisoryLock(n: number) {
+  await exec("SELECT pg_advisory_xact_lock(?)", [n]);
+}
+
+export async function all<T = Record<string, any>>(sql: string, ...p: any[]): Promise<T[]> { // eslint-disable-line @typescript-eslint/no-explicit-any
+  return (await exec(sql, p)).rows as T[];
+}
+export async function get<T = Record<string, any>>(sql: string, ...p: any[]): Promise<T | undefined> { // eslint-disable-line @typescript-eslint/no-explicit-any
+  return (await exec(sql, p)).rows[0] as T | undefined;
+}
+export async function run(sql: string, ...p: any[]): Promise<{ rowCount: number }> { // eslint-disable-line @typescript-eslint/no-explicit-any
+  const r = await exec(sql, p);
+  return { rowCount: r.rowCount };
+}
+/** INSERT ... and return the new row's id. */
+export async function insert(sql: string, ...p: any[]): Promise<number> { // eslint-disable-line @typescript-eslint/no-explicit-any
+  const r = await exec(`${sql} RETURNING id`, p);
+  return Number(r.rows[0].id);
+}
+
+export async function getSetting(key: string, fallback = ""): Promise<string> {
+  return (await get<{ value: string }>("SELECT value FROM settings WHERE key = ?", key))?.value ?? fallback;
+}
+export async function setSetting(key: string, value: string) {
+  await run("INSERT INTO settings(key, value) VALUES(?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value", key, value);
 }

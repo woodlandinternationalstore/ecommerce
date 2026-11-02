@@ -10,11 +10,11 @@ type Props = { params: Promise<{ id: string }>; searchParams: Promise<{ error?: 
 
 export default async function EditProduct({ params, searchParams }: Props) {
   const staff = await requirePerm("products");
-  const p = productById(Number((await params).id));
+  const p = await productById(Number((await params).id));
   if (!p) notFound();
   const { error, saved } = await searchParams;
-  const images = productImages(p.id);
-  const moves = all<{ created_at: string; prev_qty: number | null; new_qty: number; diff: number | null; reason: string; who: string | null }>(
+  const images = await productImages(p.id);
+  const moves = await all<{ created_at: string; prev_qty: number | null; new_qty: number; diff: number | null; reason: string; who: string | null }>(
     `SELECT m.created_at, m.prev_qty, m.new_qty, m.diff, m.reason, u.name AS who FROM stock_movements m
      LEFT JOIN users u ON u.id = m.user_id WHERE m.product_id = ? ORDER BY m.id DESC LIMIT 30`, p.id,
   );
@@ -32,7 +32,7 @@ export default async function EditProduct({ params, searchParams }: Props) {
       {saved && <p role="status" className="rounded bg-green-50 p-3 text-sm font-bold text-green-800">Saved.</p>}
       {error && <p role="alert" className="rounded bg-red-50 p-3 text-sm font-bold text-brand">{error}</p>}
 
-      <ProductForm p={p} alts={altNumbers(p.id).map((a) => a.part_number)} compat={compatOf(p.id)} role={staff.role} />
+      <ProductForm p={p} alts={(await altNumbers(p.id)).map((a) => a.part_number)} compat={await compatOf(p.id)} role={staff.role} />
 
       <section className="card space-y-3 p-4">
         <h2 className="text-2xl">Images</h2>

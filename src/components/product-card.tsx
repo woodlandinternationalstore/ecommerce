@@ -3,8 +3,8 @@ import { maxOrderQty, vehicleSummary, type Product } from "@/lib/catalog";
 import { AddToCart } from "./add-to-cart";
 import { Price, ProductImage, StockBadge } from "./product-bits";
 
-export function ProductCard({ p }: { p: Product }) {
-  const vehicle = vehicleSummary(p.id);
+export async function ProductCard({ p }: { p: Product }) {
+  const vehicle = await vehicleSummary(p.id);
   return (
     <article className="card flex flex-col overflow-hidden">
       <Link href={`/product/${p.slug}`} className="block">

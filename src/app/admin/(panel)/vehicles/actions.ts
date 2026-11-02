@@ -19,21 +19,21 @@ export async function addMake(fd: FormData) {
   await requirePerm("vehicles");
   const name = t(fd, "name");
   if (!name) done("Enter a make name.");
-  run("INSERT OR IGNORE INTO vehicle_makes(name) VALUES(?)", name);
+  await run("INSERT INTO vehicle_makes(name) VALUES(?) ON CONFLICT DO NOTHING", name);
   done("Make added.");
 }
 export async function addModel(fd: FormData) {
   await requirePerm("vehicles");
   const name = t(fd, "name");
   if (!name || !Number(fd.get("make_id"))) done("Choose a make and enter a model.");
-  run("INSERT OR IGNORE INTO vehicle_models(make_id, name) VALUES(?,?)", Number(fd.get("make_id")), name);
+  await run("INSERT INTO vehicle_models(make_id, name) VALUES(?,?) ON CONFLICT DO NOTHING", Number(fd.get("make_id")), name);
   done("Model added.");
 }
 export async function addGeneration(fd: FormData) {
   await requirePerm("vehicles");
   const name = t(fd, "name");
   if (!name || !Number(fd.get("model_id"))) done("Choose a model and enter a generation name.");
-  run(
+  await run(
     "INSERT INTO vehicle_generations(model_id, name, chassis_code, year_from, year_to, engines) VALUES(?,?,?,?,?,?)",
     Number(fd.get("model_id")), name, t(fd, "chassis_code") || null, yr(fd, "year_from"), yr(fd, "year_to"), t(fd, "engines", 300),
   );
@@ -42,6 +42,6 @@ export async function addGeneration(fd: FormData) {
 export async function removeVehicle(fd: FormData) {
   await requirePerm("vehicles");
   const table = { make: "vehicle_makes", model: "vehicle_models", gen: "vehicle_generations" }[String(fd.get("kind"))];
-  if (table) run(`DELETE FROM ${table} WHERE id = ?`, Number(fd.get("id")));
+  if (table) await run(`DELETE FROM ${table} WHERE id = ?`, Number(fd.get("id")));
   done("Removed.");
 }

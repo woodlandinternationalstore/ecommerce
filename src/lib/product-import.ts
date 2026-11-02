@@ -1,4 +1,4 @@
-import { all, get, run, tx } from "./db";
+import { all, get, insert, run, tx } from "./db";
 import { parseCsv } from "./csv";
 import { parseCompat } from "./compat";
 import { refreshSearch, setStock, uniqueSlug } from "./catalog";
@@ -30,7 +30,7 @@ export function templateCsv() {
 const yes = (s: string | undefined) => /^(yes|y|true|1)$/i.test((s ?? "").trim());
 
 /** Validate a CSV and decide, per row, whether it creates or updates a product. Writes nothing. */
-export function previewImport(text: string, canPrice: boolean): ImportPreview {
+export async function previewImport(text: string, canPrice: boolean): Promise<ImportPreview> {
   const table = parseCsv(text);
   if (table.length < 2) return { columns: [], rows: [], ignored: [], unknownColumns: [] };
   const header = table[0].map((h) => h.trim().toLowerCase());
@@ -41,10 +41,11 @@ export function previewImport(text: string, canPrice: boolean): ImportPreview {
     for (const c of PRICE_COLS) if (columns.includes(c)) ignored.push(`${c} (you do not have the pricing permission)`);
     columns = columns.filter((c) => !PRICE_COLS.includes(c));
   }
-  const cats = new Map(all<{ id: number; name: string }>("SELECT id, name FROM categories").map((c) => [c.name.toLowerCase(), c.id]));
+  const cats = new Map((await all<{ id: number; name: string }>("SELECT id, name FROM categories")).map((c) => [c.name.toLowerCase(), c.id]));
   const seen = new Map<string, number>();
 
-  const rows: ImportRow[] = table.slice(1).map((cells, i) => {
+  const rows: ImportRow[] = [];
+  for (const [i, cells] of table.slice(1).entries()) {
     const line = i + 2;
     const values: Partial<Record<Col, string>> = {};
     header.forEach((h, idx) => {
@@ -55,8 +56,8 @@ export function previewImport(text: string, canPrice: boolean): ImportPreview {
     const oem = values.oem_number ?? "";
 
     // match on part number first (exact text), then on name
-    let existing = oem ? get<{ id: number }>("SELECT id FROM products WHERE oem_number = ? AND archived = 0", oem) : undefined;
-    if (!existing && name) existing = get<{ id: number }>("SELECT id FROM products WHERE lower(name) = lower(?) AND oem_number = ? AND archived = 0", name, oem);
+    let existing = oem ? await get<{ id: number }>("SELECT id FROM products WHERE oem_number = ? AND archived = 0", oem) : undefined;
+    if (!existing && name) existing = await get<{ id: number }>("SELECT id FROM products WHERE lower(name) = lower(?) AND oem_number = ? AND archived = 0", name, oem);
     const key = oem || name.toLowerCase();
 
     if (!columns.includes("name") && !existing) errors.push("name column is required to create products");
@@ -82,25 +83,25 @@ export function previewImport(text: string, canPrice: boolean): ImportPreview {
       const c = parseCompat(values.vehicles.split(";").join("\n"));
       errors.push(...c.errors);
     }
-    return { line, key, action: errors.length ? "error" : existing ? "update" : "create", values, errors };
-  });
+    rows.push({ line, key, action: errors.length ? "error" : existing ? "update" : "create", values, errors });
+  }
   return { columns, rows, ignored, unknownColumns };
 }
 
 /** Apply the valid rows of a preview. Only columns present in the file are written; everything else is untouched. */
-export function applyImport(preview: ImportPreview, userId: number) {
-  const cats = new Map(all<{ id: number; name: string }>("SELECT id, name FROM categories").map((c) => [c.name.toLowerCase(), c.id]));
+export async function applyImport(preview: ImportPreview, userId: number) {
+  const cats = new Map((await all<{ id: number; name: string }>("SELECT id, name FROM categories")).map((c) => [c.name.toLowerCase(), c.id]));
   let created = 0;
   let updated = 0;
-  tx(() => {
+  await tx(async () => {
     for (const r of preview.rows) {
       if (r.action === "error") continue;
       const v = r.values;
       const oem = v.oem_number ?? "";
-      let id = oem ? get<{ id: number }>("SELECT id FROM products WHERE oem_number = ? AND archived = 0", oem)?.id : undefined;
-      if (!id && v.name) id = get<{ id: number }>("SELECT id FROM products WHERE lower(name) = lower(?) AND oem_number = ? AND archived = 0", v.name, oem)?.id;
+      let id = oem ? (await get<{ id: number }>("SELECT id FROM products WHERE oem_number = ? AND archived = 0", oem))?.id : undefined;
+      if (!id && v.name) id = (await get<{ id: number }>("SELECT id FROM products WHERE lower(name) = lower(?) AND oem_number = ? AND archived = 0", v.name, oem))?.id;
       if (!id) {
-        id = Number(run("INSERT INTO products(name, slug) VALUES(?,?)", v.name ?? "", uniqueSlug(`${v.name} ${oem}`, "products")).lastInsertRowid);
+        id = await insert("INSERT INTO products(name, slug) VALUES(?,?)", v.name ?? "", await uniqueSlug(`${v.name} ${oem}`, "products"));
         created++;
       } else updated++;
 
@@ -117,38 +118,47 @@ export function applyImport(preview: ImportPreview, userId: number) {
       if (v.category !== undefined && v.category) put("category_id", cats.get(v.category.toLowerCase()));
       if (v.published !== undefined && v.published !== "") put("published", yes(v.published) ? 1 : 0);
       if (v.featured !== undefined && v.featured !== "") put("featured", yes(v.featured) ? 1 : 0);
-      if (set.length) run(`UPDATE products SET ${set.join(", ")}, updated_at = datetime('now') WHERE id = ?`, ...args, id);
+      if (set.length) await run(`UPDATE products SET ${set.join(", ")}, updated_at = utcnow() WHERE id = ?`, ...args, id);
 
-      if (v.stock_qty) setStock(id, Number(v.stock_qty), "Stock Correction", userId);
+      if (v.stock_qty) await setStock(id, Number(v.stock_qty), "Stock Correction", userId);
       if (v.alt_part_numbers !== undefined && v.alt_part_numbers !== "") {
-        run("DELETE FROM product_alt_numbers WHERE product_id = ?", id);
+        await run("DELETE FROM product_alt_numbers WHERE product_id = ?", id);
         for (const a of new Set(v.alt_part_numbers.split(";").map((s) => s.trim()).filter(Boolean))) {
-          run("INSERT INTO product_alt_numbers(product_id, part_number) VALUES(?,?)", id, a);
+          await run("INSERT INTO product_alt_numbers(product_id, part_number) VALUES(?,?)", id, a);
         }
       }
       if (v.vehicles !== undefined && v.vehicles !== "") {
-        run("DELETE FROM product_compat WHERE product_id = ?", id);
+        await run("DELETE FROM product_compat WHERE product_id = ?", id);
         for (const c of parseCompat(v.vehicles.split(";").join("\n")).rows) {
-          run("INSERT INTO product_compat(product_id, make, model, generation, chassis_code, year_from, year_to, engine) VALUES(?,?,?,?,?,?,?,?)",
+          await run("INSERT INTO product_compat(product_id, make, model, generation, chassis_code, year_from, year_to, engine) VALUES(?,?,?,?,?,?,?,?)",
             id, c.make, c.model, c.generation, c.chassis, c.from, c.to, c.engine);
         }
       }
-      refreshSearch(id);
+      await refreshSearch(id);
     }
   });
   return { created, updated };
 }
 
-export function exportRows() {
-  const prods = all<Record<string, string | number | null>>(
+export async function exportRows() {
+  const prods = await all<Record<string, string | number | null>>(
     `SELECT p.id, p.name, p.oem_number, p.brand, c.name AS category, p.description, p.condition, p.authenticity, p.unit, p.price_tzs, p.price_mode,
       p.stock_qty, p.low_stock_threshold, p.published, p.featured FROM products p LEFT JOIN categories c ON c.id = p.category_id WHERE p.archived = 0 ORDER BY p.id`,
   );
-  return prods.map((p) => {
-    const alts = all<{ part_number: string }>("SELECT part_number FROM product_alt_numbers WHERE product_id = ?", p.id as number).map((a) => a.part_number).join(";");
-    const veh = all<{ make: string; model: string; generation: string; chassis_code: string; year_from: number | null; year_to: number | null; engine: string }>(
-      "SELECT * FROM product_compat WHERE product_id = ?", p.id as number,
-    ).map((c) => [c.make, c.model, c.generation, c.chassis_code, c.year_from ? `${c.year_from}${c.year_to && c.year_to !== c.year_from ? `-${c.year_to}` : ""}` : "", c.engine].join("|")).join(";");
-    return [p.name, p.oem_number, alts, p.brand, p.category, p.description, veh, p.condition, p.authenticity, p.unit, p.price_tzs, p.price_mode, p.stock_qty, p.low_stock_threshold, p.published ? "yes" : "no", p.featured ? "yes" : "no"];
-  });
+  // two bulk queries instead of two per product
+  const altRows = await all<{ product_id: number; part_number: string }>("SELECT product_id, part_number FROM product_alt_numbers ORDER BY id");
+  const vehRows = await all<{ product_id: number; make: string; model: string; generation: string; chassis_code: string; year_from: number | null; year_to: number | null; engine: string }>(
+    "SELECT * FROM product_compat ORDER BY id",
+  );
+  const alts = new Map<number, string[]>();
+  for (const a of altRows) alts.set(a.product_id, [...(alts.get(a.product_id) ?? []), a.part_number]);
+  const veh = new Map<number, string[]>();
+  for (const c of vehRows) {
+    const years = c.year_from ? `${c.year_from}${c.year_to && c.year_to !== c.year_from ? `-${c.year_to}` : ""}` : "";
+    veh.set(c.product_id, [...(veh.get(c.product_id) ?? []), [c.make, c.model, c.generation, c.chassis_code, years, c.engine].join("|")]);
+  }
+  return prods.map((p) => [
+    p.name, p.oem_number, (alts.get(p.id as number) ?? []).join(";"), p.brand, p.category, p.description, (veh.get(p.id as number) ?? []).join(";"),
+    p.condition, p.authenticity, p.unit, p.price_tzs, p.price_mode, p.stock_qty, p.low_stock_threshold, p.published ? "yes" : "no", p.featured ? "yes" : "no",
+  ]);
 }

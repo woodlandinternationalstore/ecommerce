@@ -14,7 +14,7 @@ import { RecentlyViewed } from "@/components/recently-viewed";
 type Props = { params: Promise<{ slug: string }> };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const p = publicProductBySlug((await params).slug);
+  const p = await publicProductBySlug((await params).slug);
   if (!p) return {};
   const title = `${p.name}${p.oem_number ? ` ${p.oem_number}` : ""}`;
   const description = (p.description || `${p.name} available from Woodland International Store, Kariakoo, Dar es Salaam.`).slice(0, 160);
@@ -25,13 +25,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function ProductPage({ params }: Props) {
-  const p = publicProductBySlug((await params).slug);
+  const p = await publicProductBySlug((await params).slug);
   if (!p) notFound();
-  const images = productImages(p.id);
+  const images = await productImages(p.id);
   const gallery = [...(p.main_image ? [{ id: 0, url: p.main_image, alt: p.name }] : []), ...images.filter((i) => i.url !== p.main_image)];
-  const alts = altNumbers(p.id);
-  const compat = compatOf(p.id);
-  const related = relatedProducts(p);
+  const alts = await altNumbers(p.id);
+  const compat = await compatOf(p.id);
+  const related = await relatedProducts(p);
   const pageUrl = `${SITE.url}/product/${p.slug}`;
   const stock = effectiveStock(p);
   const enquiry = buildProductEnquiry({ name: p.name, partNumber: p.oem_number, qty: 1, url: pageUrl });

@@ -6,8 +6,8 @@ export function compatText(rows: Compat[]) {
   return rows.map((c) => [c.make, c.model, c.generation, c.chassis_code, c.year_from ? `${c.year_from}${c.year_to && c.year_to !== c.year_from ? `-${c.year_to}` : ""}` : "", c.engine].join(" | ")).join("\n");
 }
 
-export function ProductForm({ p, alts, compat, role }: { p?: Product; alts: string[]; compat: Compat[]; role: Role }) {
-  const cats = categories(false);
+export async function ProductForm({ p, alts, compat, role }: { p?: Product; alts: string[]; compat: Compat[]; role: Role }) {
+  const cats = await categories(false);
   const price = can(role, "pricing");
   const stock = can(role, "stock");
   return (

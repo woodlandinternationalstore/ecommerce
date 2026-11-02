@@ -4,9 +4,9 @@ import { rateLimit } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
-export function GET(req: Request) {
+export async function GET(req: Request) {
   const ip = req.headers.get("x-forwarded-for") ?? "local";
   if (!rateLimit(`suggest:${ip}`, 120, 60_000)) return NextResponse.json({ hits: [] }, { status: 429 });
   const q = new URL(req.url).searchParams.get("q") ?? "";
-  return NextResponse.json({ hits: suggest(q.slice(0, 80)) });
+  return NextResponse.json({ hits: await suggest(q.slice(0, 80)) });
 }

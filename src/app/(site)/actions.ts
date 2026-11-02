@@ -3,8 +3,8 @@
 import crypto from "node:crypto";
 import { headers } from "next/headers";
 import { z } from "zod";
-import { get, run, tx } from "@/lib/db";
-import { compatOf, effectiveStock, hasKnownPrice, maxOrderQty, publicProductsByIds, STOCK_LABEL, vehicleSummary } from "@/lib/catalog";
+import { get, insert, tx } from "@/lib/db";
+import { effectiveStock, hasKnownPrice, maxOrderQty, publicProductsByIds, STOCK_LABEL, vehicleSummary } from "@/lib/catalog";
 import { rateLimit } from "@/lib/auth";
 import { createOrder, markLinkOpened, OrderError, phoneSchema, whatsappUrlFor } from "@/lib/orders";
 import type { CheckoutInput } from "@/lib/orders";
@@ -19,10 +19,13 @@ export type CartProduct = {
 /** Fresh product data for the browser cart. Ids that are no longer published are simply absent from the result. */
 export async function getCartProducts(ids: number[]): Promise<CartProduct[]> {
   const clean = [...new Set(ids.filter((n) => Number.isInteger(n) && n > 0))].slice(0, 60);
-  return publicProductsByIds(clean).map((p) => ({
-    id: p.id, slug: p.slug, name: p.name, partNumber: p.oem_number, vehicle: vehicleSummary(p.id, 1),
-    price: hasKnownPrice(p) ? p.price_tzs : null, stockLabel: STOCK_LABEL[effectiveStock(p)], maxQty: maxOrderQty(p), image: p.main_image,
-  }));
+  const products = await publicProductsByIds(clean);
+  return Promise.all(
+    products.map(async (p) => ({
+      id: p.id, slug: p.slug, name: p.name, partNumber: p.oem_number, vehicle: await vehicleSummary(p.id, 1),
+      price: hasKnownPrice(p) ? p.price_tzs : null, stockLabel: STOCK_LABEL[effectiveStock(p)], maxQty: maxOrderQty(p), image: p.main_image,
+    })),
+  );
 }
 
 async function clientIp() {
@@ -39,8 +42,8 @@ export async function submitOrder(input: CheckoutInput): Promise<SubmitResult> {
     return { ok: false, error: "Too many attempts. Please wait a few minutes and try again, or contact us on WhatsApp." };
   }
   try {
-    const { order } = createOrder(input);
-    return { ok: true, ref: order.ref, token: order.access_token, waUrl: whatsappUrlFor(order) };
+    const { order } = await createOrder(input);
+    return { ok: true, ref: order.ref, token: order.access_token, waUrl: await whatsappUrlFor(order) };
   } catch (e) {
     if (e instanceof z.ZodError) {
       const fieldErrors: Record<string, string> = {};
@@ -79,11 +82,11 @@ export async function submitEnquiry(input: z.input<typeof enquirySchema>): Promi
   }
   const v = parsed.data;
   try {
-    const ref = tx(() => {
+    const ref = await tx(async () => {
       const day = new Date().toISOString().slice(0, 10).replace(/-/g, "");
-      const n = get<{ n: number }>("SELECT COUNT(*) n FROM enquiries WHERE ref LIKE ?", `ENQ-${day}-%`)!.n + 1;
+      const n = (await get<{ n: number }>("SELECT COUNT(*) n FROM enquiries WHERE ref LIKE ?", `ENQ-${day}-%`))!.n + 1;
       const r = `ENQ-${day}-${String(n).padStart(4, "0")}`;
-      run("INSERT INTO enquiries(ref, access_token, name, phone, part, vehicle, message) VALUES(?,?,?,?,?,?,?)",
+      await insert("INSERT INTO enquiries(ref, access_token, name, phone, part, vehicle, message) VALUES(?,?,?,?,?,?,?)",
         r, crypto.randomBytes(8).toString("hex"), v.name, v.phone, v.part, v.vehicle, v.message);
       return r;
     });
@@ -94,4 +97,3 @@ export async function submitEnquiry(input: z.input<typeof enquirySchema>): Promi
   }
 }
 
-void compatOf;

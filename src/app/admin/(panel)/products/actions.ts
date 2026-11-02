@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { can, requirePerm } from "@/lib/auth";
-import { get, run, tx } from "@/lib/db";
+import { get, insert, run, tx } from "@/lib/db";
 import { refreshSearch, setStock, STOCK_REASONS, uniqueSlug } from "@/lib/catalog";
 import { saveImage } from "@/lib/uploads";
 import { parseCompat } from "@/lib/compat";
@@ -57,44 +57,43 @@ export async function saveProduct(formData: FormData) {
     if (price.price_mode === "exact" && !price.price_tzs) fail("Enter a selling price, or choose Price on request.");
   }
 
-  const productId = tx(() => {
+  const productId = await tx(async () => {
     let pid = id;
     if (!pid) {
-      const slug = uniqueSlug(`${v.name} ${v.oem_number}`, "products");
-      const r = run("INSERT INTO products(name, slug) VALUES(?,?)", v.name, slug);
-      pid = Number(r.lastInsertRowid);
-    } else if (!get("SELECT 1 FROM products WHERE id = ?", pid)) {
+      const slug = await uniqueSlug(`${v.name} ${v.oem_number}`, "products");
+      pid = await insert("INSERT INTO products(name, slug) VALUES(?,?)", v.name, slug);
+    } else if (!await get("SELECT 1 FROM products WHERE id = ?", pid)) {
       throw new Error("missing");
     }
-    run(
+    await run(
       `UPDATE products SET name=?, category_id=?, brand=?, oem_number=?, description=?, condition=?, authenticity=?, unit=?,
-        low_stock_threshold=?, stock_status=?, track_stock=?, allow_enquiry_oos=?, featured=?, published=?, updated_at=datetime('now') WHERE id=?`,
+        low_stock_threshold=?, stock_status=?, track_stock=?, allow_enquiry_oos=?, featured=?, published=?, updated_at=utcnow() WHERE id=?`,
       v.name, v.category_id, v.brand, v.oem_number, v.description, v.condition, v.authenticity, v.unit,
       v.low_stock_threshold ?? 3, v.stock_status, flag(formData, "track_stock"), flag(formData, "allow_enquiry_oos"),
       flag(formData, "featured"), can(staff.role, "products") ? flag(formData, "published") : 0, pid,
     );
     if (price) {
-      run(
+      await run(
         "UPDATE products SET price_tzs=?, previous_price_tzs=?, price_mode=?, price_message=? WHERE id=?",
         price.price_mode === "exact" ? price.price_tzs : price.price_tzs, price.previous_price_tzs, price.price_mode, price.price_message, pid,
       );
     }
     // stock: only touched when the quantity actually changed, and only with the stock permission
-    const cur = get<{ stock_qty: number | null }>("SELECT stock_qty FROM products WHERE id = ?", pid)!.stock_qty;
+    const cur = (await get<{ stock_qty: number | null }>("SELECT stock_qty FROM products WHERE id = ?", pid))!.stock_qty;
     if (can(staff.role, "stock") && newQty !== null && newQty !== cur) {
       const reason = (STOCK_REASONS as readonly string[]).includes(String(formData.get("stock_reason"))) ? String(formData.get("stock_reason")) : "Manual Adjustment";
-      setStock(pid, newQty, reason, staff.id);
+      await setStock(pid, newQty, reason, staff.id);
     }
-    run("DELETE FROM product_alt_numbers WHERE product_id = ?", pid);
-    for (const a of alts) run("INSERT INTO product_alt_numbers(product_id, part_number) VALUES(?,?)", pid, a);
-    run("DELETE FROM product_compat WHERE product_id = ?", pid);
+    await run("DELETE FROM product_alt_numbers WHERE product_id = ?", pid);
+    for (const a of alts) await run("INSERT INTO product_alt_numbers(product_id, part_number) VALUES(?,?)", pid, a);
+    await run("DELETE FROM product_compat WHERE product_id = ?", pid);
     for (const c of compat.rows) {
-      run(
+      await run(
         "INSERT INTO product_compat(product_id, make, model, generation, chassis_code, year_from, year_to, engine) VALUES(?,?,?,?,?,?,?,?)",
         pid, c.make, c.model, c.generation, c.chassis, c.from, c.to, c.engine,
       );
     }
-    refreshSearch(pid);
+    await refreshSearch(pid);
     return pid;
   });
 
@@ -107,16 +106,16 @@ export async function uploadImage(formData: FormData) {
   const id = Number(formData.get("id"));
   const file = formData.get("image");
   const back = `/admin/products/${id}`;
-  if (!(file instanceof File) || !get("SELECT 1 FROM products WHERE id = ?", id)) redirect(`${back}?error=Choose an image file.`);
+  if (!(file instanceof File) || !await get("SELECT 1 FROM products WHERE id = ?", id)) redirect(`${back}?error=Choose an image file.`);
   const res = await saveImage(file as File);
   if ("error" in res) redirect(`${back}?error=${encodeURIComponent(res.error)}`);
   const url = (res as { url: string }).url;
   const alt = String(formData.get("alt") ?? "").slice(0, 200);
-  run("INSERT INTO product_images(product_id, url, alt, sort) VALUES(?,?,?,?)", id, url, alt, 0);
-  if (!get<{ main_image: string | null }>("SELECT main_image FROM products WHERE id = ?", id)!.main_image) {
-    run("UPDATE products SET main_image = ? WHERE id = ?", url, id);
+  await run("INSERT INTO product_images(product_id, url, alt, sort) VALUES(?,?,?,?)", id, url, alt, 0);
+  if (!(await get<{ main_image: string | null }>("SELECT main_image FROM products WHERE id = ?", id))!.main_image) {
+    await run("UPDATE products SET main_image = ? WHERE id = ?", url, id);
   }
-  run("UPDATE products SET updated_at = datetime('now') WHERE id = ?", id);
+  await run("UPDATE products SET updated_at = utcnow() WHERE id = ?", id);
   revalidatePath("/", "layout");
   redirect(`${back}?saved=1`);
 }
@@ -125,8 +124,8 @@ export async function setMainImage(formData: FormData) {
   await requirePerm("products");
   const id = Number(formData.get("id"));
   const url = String(formData.get("url"));
-  if (get("SELECT 1 FROM product_images WHERE product_id = ? AND url = ?", id, url)) {
-    run("UPDATE products SET main_image = ?, updated_at = datetime('now') WHERE id = ?", url, id);
+  if (await get("SELECT 1 FROM product_images WHERE product_id = ? AND url = ?", id, url)) {
+    await run("UPDATE products SET main_image = ?, updated_at = utcnow() WHERE id = ?", url, id);
   }
   revalidatePath("/", "layout");
   redirect(`/admin/products/${id}?saved=1`);
@@ -136,13 +135,13 @@ export async function deleteImage(formData: FormData) {
   await requirePerm("products");
   const id = Number(formData.get("id"));
   const imageId = Number(formData.get("imageId"));
-  const img = get<{ url: string }>("SELECT url FROM product_images WHERE id = ? AND product_id = ?", imageId, id);
+  const img = await get<{ url: string }>("SELECT url FROM product_images WHERE id = ? AND product_id = ?", imageId, id);
   if (img) {
-    run("DELETE FROM product_images WHERE id = ?", imageId);
-    const main = get<{ main_image: string | null }>("SELECT main_image FROM products WHERE id = ?", id)?.main_image;
+    await run("DELETE FROM product_images WHERE id = ?", imageId);
+    const main = (await get<{ main_image: string | null }>("SELECT main_image FROM products WHERE id = ?", id))?.main_image;
     if (main === img.url) {
-      const next = get<{ url: string }>("SELECT url FROM product_images WHERE product_id = ? ORDER BY id LIMIT 1", id);
-      run("UPDATE products SET main_image = ? WHERE id = ?", next?.url ?? null, id);
+      const next = await get<{ url: string }>("SELECT url FROM product_images WHERE product_id = ? ORDER BY id LIMIT 1", id);
+      await run("UPDATE products SET main_image = ? WHERE id = ?", next?.url ?? null, id);
     }
   }
   revalidatePath("/", "layout");
@@ -155,7 +154,7 @@ export async function quickToggle(formData: FormData) {
   const id = Number(formData.get("id"));
   const field = String(formData.get("field"));
   if (!["published", "featured", "archived"].includes(field)) return;
-  run(`UPDATE products SET ${field} = 1 - ${field}, updated_at = datetime('now') WHERE id = ?`, id);
+  await run(`UPDATE products SET ${field} = 1 - ${field}, updated_at = utcnow() WHERE id = ?`, id);
   revalidatePath("/", "layout");
   redirect(String(formData.get("back") || "/admin/products"));
 }
@@ -163,32 +162,31 @@ export async function quickToggle(formData: FormData) {
 export async function deleteProduct(formData: FormData) {
   await requirePerm("products");
   const id = Number(formData.get("id"));
-  run("DELETE FROM products WHERE id = ?", id);
+  await run("DELETE FROM products WHERE id = ?", id);
   revalidatePath("/", "layout");
   redirect("/admin/products");
 }
 
 export async function loadDemoData() {
   await requirePerm("products");
-  const cat = (slug: string) => get<{ id: number }>("SELECT id FROM categories WHERE slug = ?", slug)?.id ?? null;
+  const cat = async (slug: string) => (await get<{ id: number }>("SELECT id FROM categories WHERE slug = ?", slug))?.id ?? null;
   const demo: [string, string, string, string, string, string, string][] = [
     ["Front Lower Arm", "DEMO-48068-0K090", "suspension-parts", "Toyota", "Hilux", "Revo", "Toyota"],
     ["Brake Pad Set", "DEMO-04465-60320", "brake-systems", "Toyota", "Land Cruiser Prado", "150", "Toyota"],
     ["Oil Filter", "DEMO-90915-YZZD4", "filters-lubricants", "Toyota", "Corolla", "E120", "Toyota"],
     ["Front Wheel Bearing", "DEMO-40210-JK000", "bearings", "Nissan", "Patrol", "Y62", "Nissan"],
   ];
-  tx(() => {
+  await tx(async () => {
     for (const [name, oem, c, make, model, gen, brand] of demo) {
-      if (get("SELECT 1 FROM products WHERE oem_number = ?", oem)) continue;
-      const r = run(
+      if (await get("SELECT 1 FROM products WHERE oem_number = ?", oem)) continue;
+      const pid = await insert(
         `INSERT INTO products(name, slug, category_id, oem_number, brand, description, price_mode, published, is_demo)
          VALUES(?,?,?,?,?,?, 'request', 1, 1)`,
-        `${name} (DEMO)`, uniqueSlug(`${name} demo ${oem}`, "products"), cat(c), oem, brand,
+        `${name} (DEMO)`, await uniqueSlug(`${name} demo ${oem}`, "products"), await cat(c), oem, brand,
         "DEMO DATA for testing only. Not a real product, price or stock record.",
       );
-      const pid = Number(r.lastInsertRowid);
-      run("INSERT INTO product_compat(product_id, make, model, generation) VALUES(?,?,?,?)", pid, make, model, gen);
-      refreshSearch(pid);
+      await run("INSERT INTO product_compat(product_id, make, model, generation) VALUES(?,?,?,?)", pid, make, model, gen);
+      await refreshSearch(pid);
     }
   });
   revalidatePath("/", "layout");
@@ -197,7 +195,7 @@ export async function loadDemoData() {
 
 export async function removeDemoData() {
   await requirePerm("products");
-  run("DELETE FROM products WHERE is_demo = 1");
+  await run("DELETE FROM products WHERE is_demo = 1");
   revalidatePath("/", "layout");
   redirect("/admin/products?msg=Demo products removed.");
 }

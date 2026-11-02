@@ -9,9 +9,9 @@ export const metadata: Metadata = {
   alternates: { canonical: "/contact" },
 };
 
-export default function Contact() {
-  const hours = getSetting("business_hours");
-  const map = getSetting("map_embed_url");
+export default async function Contact() {
+  const hours = await getSetting("business_hours");
+  const map = await getSetting("map_embed_url");
   return (
     <div className="container-x py-8">
       <h1 className="text-4xl">Contact us</h1>

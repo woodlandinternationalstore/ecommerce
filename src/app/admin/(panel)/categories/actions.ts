@@ -22,12 +22,12 @@ export async function saveCategory(formData: FormData) {
     if ("error" in res) redirect(`/admin/categories?error=${encodeURIComponent(res.error)}`);
     image = (res as { url: string }).url;
   }
-  if (id && get("SELECT 1 FROM categories WHERE id = ?", id)) {
-    run("UPDATE categories SET name=?, description=?, display_order=?, published=? WHERE id=?", name, description, Number.isInteger(order) ? order : 0, published, id);
-    if (image) run("UPDATE categories SET image_url = ? WHERE id = ?", image, id);
+  if (id && await get("SELECT 1 FROM categories WHERE id = ?", id)) {
+    await run("UPDATE categories SET name=?, description=?, display_order=?, published=? WHERE id=?", name, description, Number.isInteger(order) ? order : 0, published, id);
+    if (image) await run("UPDATE categories SET image_url = ? WHERE id = ?", image, id);
   } else {
-    run("INSERT INTO categories(name, slug, description, display_order, published, image_url) VALUES(?,?,?,?,?,?)",
-      name, uniqueSlug(name, "categories"), description, Number.isInteger(order) ? order : 0, published, image ?? null);
+    await run("INSERT INTO categories(name, slug, description, display_order, published, image_url) VALUES(?,?,?,?,?,?)",
+      name, await uniqueSlug(name, "categories"), description, Number.isInteger(order) ? order : 0, published, image ?? null);
   }
   revalidatePath("/", "layout");
   redirect("/admin/categories?saved=1");
@@ -35,7 +35,7 @@ export async function saveCategory(formData: FormData) {
 
 export async function deleteCategory(formData: FormData) {
   await requirePerm("categories");
-  run("DELETE FROM categories WHERE id = ?", Number(formData.get("id")));
+  await run("DELETE FROM categories WHERE id = ?", Number(formData.get("id")));
   revalidatePath("/", "layout");
   redirect("/admin/categories?saved=1");
 }

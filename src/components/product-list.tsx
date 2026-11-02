@@ -7,21 +7,21 @@ import { ProductCard } from "./product-card";
 
 type Sp = Record<string, string | undefined>;
 
-export function ProductList({ sp, basePath, fixedCategory }: { sp: Sp; basePath: string; fixedCategory?: string }) {
+export async function ProductList({ sp, basePath, fixedCategory }: { sp: Sp; basePath: string; fixedCategory?: string }) {
   const params: SearchParams = {
     q: sp.q, category: fixedCategory ?? sp.category, make: sp.make, model: sp.model, brand: sp.brand, avail: sp.avail,
     sort: sp.sort, page: Number(sp.page) || 1,
   };
-  const res = searchProducts(params);
-  const { brands } = filterOptions();
-  const makes = all<{ name: string }>("SELECT name FROM vehicle_makes ORDER BY name").map((m) => m.name);
+  const res = await searchProducts(params);
+  const { brands } = await filterOptions();
+  const makes = (await all<{ name: string }>("SELECT name FROM vehicle_makes ORDER BY name")).map((m) => m.name);
   const models = sp.make
-    ? all<{ name: string }>(
+    ? (await all<{ name: string }>(
         "SELECT m.name FROM vehicle_models m JOIN vehicle_makes k ON k.id = m.make_id WHERE lower(k.name) = lower(?) ORDER BY m.name",
         sp.make,
-      ).map((m) => m.name)
+      )).map((m) => m.name)
     : [];
-  const cats = categories();
+  const cats = await categories();
   const pages = Math.max(1, Math.ceil(res.total / res.pageSize));
 
   const link = (over: Sp) => {

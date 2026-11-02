@@ -7,14 +7,14 @@ import { ProductList } from "@/components/product-list";
 type Props = { params: Promise<{ slug: string }>; searchParams: Promise<Record<string, string | undefined>> };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const c = categoryBySlug((await params).slug);
+  const c = await categoryBySlug((await params).slug);
   if (!c) return {};
   return { title: `${c.name} | Auto Spare Parts`, description: c.description, alternates: { canonical: `/category/${c.slug}` } };
 }
 
 export default async function CategoryPage({ params, searchParams }: Props) {
   const { slug } = await params;
-  const c = categoryBySlug(slug);
+  const c = await categoryBySlug(slug);
   if (!c) notFound();
   const sp = await searchParams;
   return (

@@ -9,7 +9,7 @@ type Sp = { q?: string; status?: string; from?: string; to?: string };
 export default async function Orders({ searchParams }: { searchParams: Promise<Sp> }) {
   await requirePerm("orders");
   const sp = await searchParams;
-  const rows = ordersQuery(sp);
+  const rows = await ordersQuery(sp);
   const exportQs = new URLSearchParams(Object.entries(sp).filter(([, v]) => v) as [string, string][]).toString();
   return (
     <div className="space-y-5">

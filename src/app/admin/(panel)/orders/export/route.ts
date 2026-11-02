@@ -11,8 +11,8 @@ export async function GET(req: Request) {
   const staff = await currentStaff();
   if (!staff || !can(staff.role, "orders")) return new NextResponse("Forbidden", { status: 403 });
   const sp = Object.fromEntries(new URL(req.url).searchParams);
-  const orders = ordersQuery(sp);
-  const items = all<{ order_id: number; name: string; part_number: string; qty: number }>("SELECT order_id, name, part_number, qty FROM order_items");
+  const orders = await ordersQuery(sp);
+  const items = await all<{ order_id: number; name: string; part_number: string; qty: number }>("SELECT order_id, name, part_number, qty FROM order_items");
   const by = new Map<number, string[]>();
   for (const i of items) by.set(i.order_id, [...(by.get(i.order_id) ?? []), `${i.qty} x ${i.name} [${i.part_number}]`]);
   void ORDER_STATUSES;

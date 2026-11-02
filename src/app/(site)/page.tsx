@@ -4,9 +4,9 @@ import { SITE, VEHICLE_BRANDS, waLink } from "@/lib/site";
 import { ProductCard } from "@/components/product-card";
 import { SearchBox } from "@/components/search-box";
 
-export default function Home() {
-  const cats = categories();
-  const featured = featuredProducts(8);
+export default async function Home() {
+  const cats = await categories();
+  const featured = await featuredProducts(8);
   return (
     <>
       <section className="bg-ink text-white">

@@ -9,13 +9,13 @@ async function setStatus(fd: FormData) {
   "use server";
   await requirePerm("enquiries");
   const status = String(fd.get("status"));
-  if (["new", "contacted", "closed"].includes(status)) run("UPDATE enquiries SET status = ? WHERE id = ?", status, Number(fd.get("id")));
+  if (["new", "contacted", "closed"].includes(status)) await run("UPDATE enquiries SET status = ? WHERE id = ?", status, Number(fd.get("id")));
   revalidatePath("/admin/enquiries");
 }
 
 export default async function Enquiries() {
   await requirePerm("enquiries");
-  const rows = all<Enq>("SELECT * FROM enquiries ORDER BY id DESC LIMIT 300");
+  const rows = await all<Enq>("SELECT * FROM enquiries ORDER BY id DESC LIMIT 300");
   return (
     <div className="space-y-5">
       <h1 className="text-4xl">Customer enquiries</h1>

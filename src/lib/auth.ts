@@ -40,7 +40,7 @@ const DAYS = 7;
 export async function createSession(userId: number) {
   const token = crypto.randomBytes(32).toString("hex");
   const expires = new Date(Date.now() + DAYS * 86400_000);
-  run("INSERT INTO sessions(token_hash, user_id, expires_at) VALUES(?,?,?)", sha(token), userId, expires.toISOString());
+  await run("INSERT INTO sessions(token_hash, user_id, expires_at) VALUES(?,?,?)", sha(token), userId, expires.toISOString());
   (await cookies()).set(COOKIE, token, {
     httpOnly: true, sameSite: "lax", secure: process.env.NODE_ENV === "production", path: "/", expires,
   });
@@ -49,7 +49,7 @@ export async function createSession(userId: number) {
 export async function destroySession() {
   const jar = await cookies();
   const token = jar.get(COOKIE)?.value;
-  if (token) run("DELETE FROM sessions WHERE token_hash = ?", sha(token));
+  if (token) await run("DELETE FROM sessions WHERE token_hash = ?", sha(token));
   jar.delete(COOKIE);
 }
 
@@ -58,14 +58,14 @@ export type Staff = { id: number; email: string; name: string; role: Role };
 export async function currentStaff(): Promise<Staff | null> {
   const token = (await cookies()).get(COOKIE)?.value;
   if (!token) return null;
-  const row = get<Staff & { expires_at: string }>(
+  const row = await get<Staff & { expires_at: string }>(
     `SELECT u.id, u.email, u.name, u.role, s.expires_at FROM sessions s JOIN users u ON u.id = s.user_id
      WHERE s.token_hash = ? AND u.active = 1`,
     sha(token),
   );
   if (!row) return null;
   if (new Date(row.expires_at) < new Date()) {
-    run("DELETE FROM sessions WHERE token_hash = ?", sha(token));
+    await run("DELETE FROM sessions WHERE token_hash = ?", sha(token));
     return null;
   }
   return { id: row.id, email: row.email, name: row.name, role: row.role };
@@ -79,8 +79,8 @@ export async function requirePerm(perm: Perm): Promise<Staff> {
   return staff;
 }
 
-export function userCount() {
-  return get<{ n: number }>("SELECT COUNT(*) n FROM users")!.n;
+export async function userCount() {
+  return (await get<{ n: number }>("SELECT COUNT(*) n FROM users"))!.n;
 }
 
 export function listUsers() {

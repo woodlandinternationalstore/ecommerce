@@ -13,7 +13,7 @@ export default async function OrderPage({ params, searchParams }: Props) {
   const { ref } = await params;
   const { t, open } = await searchParams;
   // The access token in the link is the only way to view an order: guessing a reference is not enough.
-  const order = t ? orderByRefAndToken(ref, t) : undefined;
+  const order = t ? await orderByRefAndToken(ref, t) : undefined;
   if (!order) notFound();
 
   return (
@@ -33,8 +33,8 @@ export default async function OrderPage({ params, searchParams }: Props) {
       <OrderHandoff
         reference={order.ref}
         token={order.access_token}
-        waUrl={whatsappUrlFor(order)}
-        message={messageTextFor(order)}
+        waUrl={await whatsappUrlFor(order)}
+        message={await messageTextFor(order)}
         autoNote={open === "1"}
       />
 

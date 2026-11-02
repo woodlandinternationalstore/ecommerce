@@ -8,7 +8,7 @@ type Sp = { error?: string; preview?: string; done?: string };
 export default async function ImportPage({ searchParams }: { searchParams: Promise<Sp> }) {
   const staff = await requirePerm("import");
   const sp = await searchParams;
-  const raw = sp.preview ? get<{ value: string }>("SELECT value FROM settings WHERE key = ?", `import_preview_${staff.id}`)?.value : undefined;
+  const raw = sp.preview ? (await get<{ value: string }>("SELECT value FROM settings WHERE key = ?", `import_preview_${staff.id}`))?.value : undefined;
   const preview = raw ? (JSON.parse(raw) as ImportPreview) : null;
   const ok = preview?.rows.filter((r) => r.action !== "error") ?? [];
   const bad = preview?.rows.filter((r) => r.action === "error") ?? [];

@@ -15,12 +15,12 @@ type Sp = Record<string, string | undefined>;
 
 export default async function Finder({ searchParams }: { searchParams: Promise<Sp> }) {
   const sp = await searchParams;
-  const makes = all<{ id: number; name: string }>("SELECT * FROM vehicle_makes ORDER BY name");
+  const makes = await all<{ id: number; name: string }>("SELECT * FROM vehicle_makes ORDER BY name");
   const make = makes.find((m) => m.name === sp.make);
-  const models = make ? all<{ id: number; name: string }>("SELECT id, name FROM vehicle_models WHERE make_id = ? ORDER BY name", make.id) : [];
+  const models = make ? await all<{ id: number; name: string }>("SELECT id, name FROM vehicle_models WHERE make_id = ? ORDER BY name", make.id) : [];
   const model = models.find((m) => m.name === sp.model);
   const gens = model
-    ? all<{ id: number; name: string; chassis_code: string | null; year_from: number | null; year_to: number | null; engines: string }>(
+    ? await all<{ id: number; name: string; chassis_code: string | null; year_from: number | null; year_to: number | null; engines: string }>(
         "SELECT * FROM vehicle_generations WHERE model_id = ? ORDER BY year_from, name", model.id,
       )
     : [];
@@ -32,7 +32,7 @@ export default async function Finder({ searchParams }: { searchParams: Promise<S
 
   let results: { p: Product; confirmed: boolean }[] | null = null;
   if (make && model) {
-    const candidates = all<Product>(
+    const candidates = await all<Product>(
       `SELECT p.*, c.name AS category_name, c.slug AS category_slug FROM products p LEFT JOIN categories c ON c.id = p.category_id
        WHERE ${PUBLIC_WHERE} AND EXISTS (SELECT 1 FROM product_compat pc WHERE pc.product_id = p.id AND lower(pc.make) = lower(?) AND lower(pc.model) = lower(?))
        ORDER BY p.name LIMIT 300`,
@@ -44,7 +44,7 @@ export default async function Finder({ searchParams }: { searchParams: Promise<S
       if (tokens.length && !tokens.every((t) => p.search_text.includes(t))) continue;
       let ok = false;
       let confirmed = false;
-      for (const c of compatOf(p.id)) {
+      for (const c of await compatOf(p.id)) {
         if (c.make.toLowerCase() !== make.name.toLowerCase() || c.model.toLowerCase() !== model.name.toLowerCase()) continue;
         const genOk = !gen || !c.generation || c.generation.toLowerCase() === gen.name.toLowerCase();
         const yearOk = year === null || ((c.year_from === null || year >= c.year_from) && (c.year_to === null || year <= c.year_to));

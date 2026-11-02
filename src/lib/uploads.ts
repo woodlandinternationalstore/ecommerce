@@ -1,9 +1,8 @@
 import crypto from "node:crypto";
-import fs from "node:fs";
-import path from "node:path";
+import { run } from "./db";
 
-export const UPLOAD_DIR = path.resolve(process.env.UPLOAD_DIR ?? "data/uploads");
 export const MAX_IMAGE_BYTES = 3 * 1024 * 1024;
+export const MIME = { jpg: "image/jpeg", png: "image/png", webp: "image/webp" } as const;
 
 /** Identify an image by its first bytes, never by the client-supplied name or MIME type. */
 export function sniffImage(buf: Buffer): "jpg" | "png" | "webp" | null {
@@ -13,14 +12,14 @@ export function sniffImage(buf: Buffer): "jpg" | "png" | "webp" | null {
   return null;
 }
 
+/** Validate and store an uploaded image in the database. Returns the public URL. */
 export async function saveImage(file: File): Promise<{ url: string } | { error: string }> {
   if (file.size === 0) return { error: "Choose an image file." };
   if (file.size > MAX_IMAGE_BYTES) return { error: "Image is larger than 3 MB." };
   const buf = Buffer.from(await file.arrayBuffer());
   const ext = sniffImage(buf);
   if (!ext) return { error: "Only JPG, PNG or WebP images are allowed." };
-  fs.mkdirSync(UPLOAD_DIR, { recursive: true });
   const name = `${crypto.randomBytes(16).toString("hex")}.${ext}`;
-  fs.writeFileSync(path.join(UPLOAD_DIR, name), buf);
+  await run("INSERT INTO uploads(name, mime, data) VALUES(?,?,?)", name, MIME[ext], buf);
   return { url: `/uploads/${name}` };
 }

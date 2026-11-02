@@ -1,13 +1,15 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { all, get } from "@/lib/db";
 import { can, currentStaff } from "@/lib/auth";
 import { STATUS_LABEL, type OrderStatus } from "@/lib/orders";
 
-const n = (sql: string, ...p: unknown[]) => get<{ n: number }>(sql, ...p)!.n;
+const n = async (sql: string, ...p: unknown[]) => (await get<{ n: number }>(sql, ...p))!.n;
 
 export default async function Dashboard({ searchParams }: { searchParams: Promise<{ denied?: string }> }) {
   // any signed-in staff may see the dashboard; sections inside are limited by role
-  const staff = (await currentStaff())!;
+  const staff = await currentStaff();
+  if (!staff) redirect("/admin/login");
   const { denied } = await searchParams;
   const showProducts = can(staff.role, "products");
   const showOrders = can(staff.role, "orders");
@@ -15,30 +17,30 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
   const today = new Date().toISOString().slice(0, 10);
   const stats: [string, number | string][] = [];
   if (showProducts) {
-    const low = n(`SELECT COUNT(*) n FROM products WHERE archived = 0 AND stock_qty IS NOT NULL AND stock_qty > 0 AND stock_qty <= low_stock_threshold`);
+    const low = await n(`SELECT COUNT(*) n FROM products WHERE archived = 0 AND stock_qty IS NOT NULL AND stock_qty > 0 AND stock_qty <= low_stock_threshold`);
     stats.push(
-      ["Total products", n("SELECT COUNT(*) n FROM products WHERE archived = 0")],
-      ["Published", n("SELECT COUNT(*) n FROM products WHERE archived = 0 AND published = 1")],
-      ["Out of stock", n("SELECT COUNT(*) n FROM products WHERE archived = 0 AND stock_qty = 0")],
+      ["Total products", await n("SELECT COUNT(*) n FROM products WHERE archived = 0")],
+      ["Published", await n("SELECT COUNT(*) n FROM products WHERE archived = 0 AND published = 1")],
+      ["Out of stock", await n("SELECT COUNT(*) n FROM products WHERE archived = 0 AND stock_qty = 0")],
       ["Low stock", low],
     );
   }
   if (showOrders) {
     stats.push(
-      ["Total orders", n("SELECT COUNT(*) n FROM orders")],
-      ["Pending", n("SELECT COUNT(*) n FROM orders WHERE status = 'pending_confirmation'")],
-      ["Confirmed", n("SELECT COUNT(*) n FROM orders WHERE status IN ('confirmed','price_confirmed','preparing','ready_for_pickup','out_for_delivery')")],
-      ["Completed", n("SELECT COUNT(*) n FROM orders WHERE status = 'completed'")],
-      ["Received today", n("SELECT COUNT(*) n FROM orders WHERE date(created_at) = ?", today)],
+      ["Total orders", await n("SELECT COUNT(*) n FROM orders")],
+      ["Pending", await n("SELECT COUNT(*) n FROM orders WHERE status = 'pending_confirmation'")],
+      ["Confirmed", await n("SELECT COUNT(*) n FROM orders WHERE status IN ('confirmed','price_confirmed','preparing','ready_for_pickup','out_for_delivery')")],
+      ["Completed", await n("SELECT COUNT(*) n FROM orders WHERE status = 'completed'")],
+      ["Received today", await n("SELECT COUNT(*) n FROM orders WHERE substr(created_at, 1, 10) = ?", today)],
     );
   }
   const recent = showOrders
-    ? all<{ id: number; ref: string; customer_name: string; status: OrderStatus; created_at: string; known_subtotal: number; unknown_count: number }>(
+    ? await all<{ id: number; ref: string; customer_name: string; status: OrderStatus; created_at: string; known_subtotal: number; unknown_count: number }>(
         "SELECT id, ref, customer_name, status, created_at, known_subtotal, unknown_count FROM orders ORDER BY id DESC LIMIT 8",
       )
     : [];
   const requested = showOrders
-    ? all<{ name: string; part_number: string; qty: number }>(
+    ? await all<{ name: string; part_number: string; qty: number }>(
         `SELECT name, part_number, SUM(qty) qty FROM order_items GROUP BY product_id, name, part_number ORDER BY qty DESC LIMIT 5`,
       )
     : [];

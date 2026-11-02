@@ -12,14 +12,14 @@ type Props = { params: Promise<{ id: string }>; searchParams: Promise<{ error?: 
 
 export default async function OrderDetail({ params, searchParams }: Props) {
   await requirePerm("orders");
-  const o = get<OrderRow>("SELECT * FROM orders WHERE id = ?", Number((await params).id));
+  const o = await get<OrderRow>("SELECT * FROM orders WHERE id = ?", Number((await params).id));
   if (!o) notFound();
   const { error, saved } = await searchParams;
-  const items = orderItems(o.id);
-  const history = all<{ status: keyof typeof STATUS_LABEL; note: string; created_at: string; who: string | null }>(
+  const items = await orderItems(o.id);
+  const history = await all<{ status: keyof typeof STATUS_LABEL; note: string; created_at: string; who: string | null }>(
     "SELECT h.status, h.note, h.created_at, u.name AS who FROM order_status_history h LEFT JOIN users u ON u.id = h.user_id WHERE h.order_id = ? ORDER BY h.id DESC", o.id,
   );
-  const notes = all<{ note: string; created_at: string; who: string | null }>(
+  const notes = await all<{ note: string; created_at: string; who: string | null }>(
     "SELECT n.note, n.created_at, u.name AS who FROM order_notes n LEFT JOIN users u ON u.id = n.user_id WHERE n.order_id = ? ORDER BY n.id DESC", o.id,
   );
   const digits = o.whatsapp.replace(/\D/g, "");

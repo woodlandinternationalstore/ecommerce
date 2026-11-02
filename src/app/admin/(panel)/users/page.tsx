@@ -14,8 +14,8 @@ async function createUser(fd: FormData) {
   }).safeParse(Object.fromEntries(fd));
   if (!p.success) redirect(`/admin/users?error=${encodeURIComponent(p.error.issues[0].message)}`);
   const v = p.data!;
-  if (get("SELECT 1 FROM users WHERE email = ?", v.email)) redirect("/admin/users?error=That email already has an account.");
-  run("INSERT INTO users(email, name, password_hash, role) VALUES(?,?,?,?)", v.email, v.name, hashPassword(v.password), v.role);
+  if (await get("SELECT 1 FROM users WHERE email = ?", v.email)) redirect("/admin/users?error=That email already has an account.");
+  await run("INSERT INTO users(email, name, password_hash, role) VALUES(?,?,?,?)", v.email, v.name, hashPassword(v.password), v.role);
   redirect("/admin/users?saved=1");
 }
 
@@ -27,8 +27,8 @@ async function updateUser(fd: FormData) {
   const active = fd.get("active") === "on" ? 1 : 0;
   if (id === me.id) redirect("/admin/users?error=You cannot change your own role or deactivate yourself.");
   if (!["super_admin", "sales", "inventory"].includes(role)) redirect("/admin/users");
-  run("UPDATE users SET role = ?, active = ? WHERE id = ?", role, active, id);
-  if (!active) run("DELETE FROM sessions WHERE user_id = ?", id);
+  await run("UPDATE users SET role = ?, active = ? WHERE id = ?", role, active, id);
+  if (!active) await run("DELETE FROM sessions WHERE user_id = ?", id);
   redirect("/admin/users?saved=1");
 }
 
@@ -48,7 +48,7 @@ export default async function Users({ searchParams }: { searchParams: Promise<{ 
         <button className="btn btn-red">Add staff</button>
       </form>
       <div className="card divide-y divide-line">
-        {listUsers().map((u) => (
+        {(await listUsers()).map((u) => (
           <form key={u.id} action={updateUser} className="flex flex-wrap items-center gap-3 p-3 text-sm">
             <input type="hidden" name="id" value={u.id} />
             <div className="min-w-48 flex-1"><b>{u.name}</b><br /><span className="text-muted">{u.email}</span></div>

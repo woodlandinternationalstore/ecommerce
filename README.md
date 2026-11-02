@@ -1,6 +1,6 @@
 # Woodland International Store
 
-Spare parts catalogue with a cart and WhatsApp ordering, plus a staff dashboard. Next.js 16, TypeScript, Tailwind 4, SQLite (Node's built-in `node:sqlite`), zod, Vitest.
+Spare parts catalogue with a cart and WhatsApp ordering, plus a staff dashboard. Next.js 16, TypeScript, Tailwind 4, Postgres on Neon (`pg`), zod, Vitest.
 
 ## What works
 - Storefront: home, shop with search/filters/sort, categories, product pages, vehicle finder, cart, checkout, order confirmation, About, Contact, FAQ, Privacy, Terms, sitemap, robots.
@@ -12,21 +12,21 @@ Spare parts catalogue with a cart and WhatsApp ordering, plus a staff dashboard.
 - No logo or product photos were supplied. The header uses a text wordmark and products show "Photo coming soon" until photos are uploaded in the admin.
 - No invented prices, stock, hours, map location or certifications. Demo products (admin > Products > Add DEMO products) are labelled DEMO and removable.
 - Excel (.xlsx) import/export is not built; use CSV (save from Excel as CSV UTF-8, format part-number cells as Text).
-- Not yet tested in a browser (the build was kept off the local machine to save disk space). Unit tests cover search, order creation, stock rules, the WhatsApp message and encoding, CSV and import.
 - Rate limiting is in memory per server process.
+- Tests run on in-process Postgres (PGlite) and cover search, order creation (including simultaneous orders), stock rules, the WhatsApp message and encoding, CSV and import.
 
 ## Run / deploy
-Needs **Node 24+** and a **persistent disk** (the database is a file; serverless hosts such as Vercel will lose it).
+Needs Node 24+ and a Neon Postgres database. Works on Vercel or any Node host: nothing is written to local disk (uploaded images are stored in the database).
 
 ```bash
 npm install
+node --env-file=.env.local scripts/migrate.mjs   # applies db/migrations once each
 npm run build
 npm start
 ```
 
 Environment variables (see `.env.example`):
-- `DATABASE_FILE` path of the database file (default `data/woodland.db`). Back it up.
-- `UPLOAD_DIR` where product images are stored (default `data/uploads`). Keep on the same persistent disk.
+- `DATABASE_URL` Neon connection string (pooled). Never commit it.
 - `SETUP_TOKEN` required in production to create the first admin at `/admin/setup`.
 - `NEXT_PUBLIC_SITE_URL` the public address, for sitemap and links.
 

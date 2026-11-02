@@ -7,7 +7,7 @@ export const metadata: Metadata = { title: "Staff login", robots: { index: false
 
 export default async function Login({ searchParams }: { searchParams: Promise<{ error?: string }> }) {
   if (await currentStaff()) redirect("/admin");
-  if (userCount() === 0) redirect("/admin/setup");
+  if (await userCount() === 0) redirect("/admin/setup");
   const { error } = await searchParams;
   return (
     <div className="mx-auto flex min-h-screen max-w-sm flex-col justify-center px-4">

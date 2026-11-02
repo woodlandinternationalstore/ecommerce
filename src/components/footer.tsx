@@ -5,9 +5,9 @@ import { SITE, waLink } from "@/lib/site";
 import { Logo } from "./header";
 import { MobileBar } from "./mobile-bar";
 
-export function Footer() {
-  const cats = categories().slice(0, 8);
-  const hours = getSetting("business_hours");
+export async function Footer() {
+  const cats = (await categories()).slice(0, 8);
+  const hours = await getSetting("business_hours");
   return (
     <>
       <footer className="mt-16 bg-ink pb-24 text-white md:pb-0 no-print">

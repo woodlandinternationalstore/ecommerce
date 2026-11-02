@@ -1,7 +1,7 @@
 import crypto from "node:crypto";
 import { z } from "zod";
-import { all, get, run, tx } from "./db";
-import { compatOf, compatLabel, effectiveStock, hasKnownPrice, maxOrderQty, productById, type Product } from "./catalog";
+import { advisoryLock, all, get, insert, run, tx } from "./db";
+import { compatOf, compatLabel, hasKnownPrice, maxOrderQty, productById, type Product } from "./catalog";
 import { buildOrderMessage, orderWhatsAppUrl, type MessageOrder } from "./whatsapp";
 
 export const ORDER_STATUSES = [
@@ -68,13 +68,13 @@ export type CheckoutInput = z.input<typeof checkoutSchema>;
 
 export class OrderError extends Error {}
 
-function nextRef(): string {
+async function nextRef(): Promise<string> {
   const d = new Date();
   const day = `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, "0")}${String(d.getDate()).padStart(2, "0")}`;
-  const row = get<{ n: number }>("SELECT COUNT(*) n FROM orders WHERE ref LIKE ?", `WIS-${day}-%`)!;
+  const row = (await get<{ n: number }>("SELECT COUNT(*) n FROM orders WHERE ref LIKE ?", `WIS-${day}-%`))!;
   let n = row.n + 1;
   let ref = `WIS-${day}-${String(n).padStart(4, "0")}`;
-  while (get("SELECT 1 FROM orders WHERE ref = ?", ref)) ref = `WIS-${day}-${String(++n).padStart(4, "0")}`;
+  while (await get("SELECT 1 FROM orders WHERE ref = ?", ref)) ref = `WIS-${day}-${String(++n).padStart(4, "0")}`;
   return ref;
 }
 
@@ -91,7 +91,8 @@ export type OrderItemRow = {
 
 export const orderItems = (orderId: number) => all<OrderItemRow>("SELECT * FROM order_items WHERE order_id = ? ORDER BY id", orderId);
 
-export function messageFor(order: OrderRow): MessageOrder {
+export async function messageFor(order: OrderRow): Promise<MessageOrder> {
+  const items = await orderItems(order.id);
   return {
     ref: order.ref,
     customerName: order.customer_name,
@@ -103,7 +104,7 @@ export function messageFor(order: OrderRow): MessageOrder {
     contactMethod: order.contact_method,
     vehicleInfo: order.vehicle_info,
     notes: order.notes,
-    items: orderItems(order.id).map((i) => ({
+    items: items.map((i) => ({
       name: i.name, partNumber: i.part_number, vehicle: i.vehicle, qty: i.qty, unitPrice: i.unit_price, lineTotal: i.line_total,
     })),
     knownSubtotal: order.known_subtotal,
@@ -116,11 +117,12 @@ export function messageFor(order: OrderRow): MessageOrder {
  * any price sent by the browser is ignored (the schema has no price field).
  * Repeating the same idempotencyKey returns the already-saved order.
  */
-export function createOrder(input: CheckoutInput) {
+export async function createOrder(input: CheckoutInput) {
   const v = checkoutSchema.parse(input);
 
-  return tx(() => {
-    const existing = get<OrderRow>("SELECT * FROM orders WHERE idempotency_key = ?", v.idempotencyKey);
+  return tx(async () => {
+    await advisoryLock(7001); // one order at a time, so references never collide
+    const existing = await get<OrderRow>("SELECT * FROM orders WHERE idempotency_key = ?", v.idempotencyKey);
     if (existing) return { order: existing, duplicate: true };
 
     // merge duplicate product lines
@@ -129,7 +131,7 @@ export function createOrder(input: CheckoutInput) {
 
     const lines: { p: Product; qty: number }[] = [];
     for (const [id, qty] of qtyBy) {
-      const p = productById(id);
+      const p = await productById(id);
       if (!p || !p.published || p.archived) throw new OrderError("A product in your cart is no longer available. Please review your cart.");
       const max = maxOrderQty(p);
       if (max !== null && qty > max) {
@@ -144,15 +146,15 @@ export function createOrder(input: CheckoutInput) {
 
     let known = 0;
     let unknown = 0;
-    const rows = lines.map(({ p, qty }) => {
-      const priced = hasKnownPrice(p);
-      const unit = priced ? p.price_tzs! : null;
+    const rows = [];
+    for (const { p, qty } of lines) {
+      const unit = hasKnownPrice(p) ? p.price_tzs! : null;
       const total = unit !== null ? unit * qty : null;
       if (total !== null) known += total;
       else unknown += 1;
-      const vehicle = compatOf(p.id).slice(0, 3).map((c) => compatLabel({ ...c, year_from: null, year_to: null, engine: "", chassis_code: "" })).join(", ");
-      return { p, qty, unit, total, vehicle };
-    });
+      const vehicle = (await compatOf(p.id)).slice(0, 3).map((c) => compatLabel({ ...c, year_from: null, year_to: null, engine: "", chassis_code: "" })).join(", ");
+      rows.push({ p, qty, unit, total, vehicle });
+    }
 
     const vehicleInfo = [
       [v.vehicleMake, v.vehicleModel, v.vehicleYear].filter(Boolean).join(" "),
@@ -161,9 +163,9 @@ export function createOrder(input: CheckoutInput) {
       v.fitment && `Fitment info: ${v.fitment}`,
     ].filter(Boolean).join("\n");
 
-    const ref = nextRef();
+    const ref = await nextRef();
     const token = crypto.randomBytes(16).toString("hex");
-    const res = run(
+    const orderId = await insert(
       `INSERT INTO orders(ref, access_token, idempotency_key, customer_name, whatsapp, alt_phone, email, delivery_method,
         delivery_location, region, contact_method, vehicle_info, notes, known_subtotal, unknown_count)
        VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
@@ -171,21 +173,20 @@ export function createOrder(input: CheckoutInput) {
       v.deliveryMethod === "pickup" ? "" : v.deliveryLocation, v.deliveryMethod === "pickup" ? "" : v.region,
       v.contactMethod, vehicleInfo, v.notes, known, unknown,
     );
-    const orderId = Number(res.lastInsertRowid);
     for (const r of rows) {
-      run(
+      await run(
         `INSERT INTO order_items(order_id, product_id, name, part_number, vehicle, qty, unit_price, line_total)
          VALUES(?,?,?,?,?,?,?,?)`,
         orderId, r.p.id, r.p.name, r.p.oem_number, r.vehicle, r.qty, r.unit, r.total,
       );
     }
-    run("INSERT INTO order_status_history(order_id, status, note) VALUES(?,?,?)", orderId, "pending_confirmation", "Order received from website");
-    return { order: get<OrderRow>("SELECT * FROM orders WHERE id = ?", orderId)!, duplicate: false };
+    await run("INSERT INTO order_status_history(order_id, status, note) VALUES(?,?,?)", orderId, "pending_confirmation", "Order received from website");
+    return { order: (await get<OrderRow>("SELECT * FROM orders WHERE id = ?", orderId))!, duplicate: false };
   });
 }
 
-export function orderByRefAndToken(ref: string, token: string) {
-  const o = get<OrderRow>("SELECT * FROM orders WHERE ref = ?", ref);
+export async function orderByRefAndToken(ref: string, token: string) {
+  const o = await get<OrderRow>("SELECT * FROM orders WHERE ref = ?", ref);
   if (!o) return undefined;
   const a = Buffer.from(o.access_token);
   const b = Buffer.from(token);
@@ -193,16 +194,14 @@ export function orderByRefAndToken(ref: string, token: string) {
 }
 
 /** Customer opened WhatsApp: only ever moves forward from "not_opened". Never touches order status. */
-export function markLinkOpened(ref: string, token: string) {
-  const o = orderByRefAndToken(ref, token);
+export async function markLinkOpened(ref: string, token: string) {
+  const o = await orderByRefAndToken(ref, token);
   if (!o) return false;
   if (o.handoff_status === "not_opened") {
-    run("UPDATE orders SET handoff_status = 'link_opened', updated_at = datetime('now') WHERE id = ?", o.id);
+    await run("UPDATE orders SET handoff_status = 'link_opened', updated_at = utcnow() WHERE id = ?", o.id);
   }
   return true;
 }
 
-export const whatsappUrlFor = (o: OrderRow) => orderWhatsAppUrl(messageFor(o));
-export const messageTextFor = (o: OrderRow) => buildOrderMessage(messageFor(o));
-
-export { effectiveStock };
+export const whatsappUrlFor = async (o: OrderRow) => orderWhatsAppUrl(await messageFor(o));
+export const messageTextFor = async (o: OrderRow) => buildOrderMessage(await messageFor(o));

@@ -7,9 +7,9 @@ type Gen = { id: number; model_id: number; name: string; chassis_code: string | 
 export default async function Vehicles({ searchParams }: { searchParams: Promise<{ msg?: string }> }) {
   await requirePerm("vehicles");
   const { msg } = await searchParams;
-  const makes = all<{ id: number; name: string }>("SELECT * FROM vehicle_makes ORDER BY name");
-  const models = all<{ id: number; make_id: number; name: string }>("SELECT * FROM vehicle_models ORDER BY name");
-  const gens = all<Gen>("SELECT * FROM vehicle_generations ORDER BY year_from, name");
+  const makes = await all<{ id: number; name: string }>("SELECT * FROM vehicle_makes ORDER BY name");
+  const models = await all<{ id: number; make_id: number; name: string }>("SELECT * FROM vehicle_models ORDER BY name");
+  const gens = await all<Gen>("SELECT * FROM vehicle_generations ORDER BY year_from, name");
   const Del = ({ kind, id }: { kind: string; id: number }) => (
     <form action={removeVehicle} className="inline"><input type="hidden" name="kind" value={kind} /><input type="hidden" name="id" value={id} /><button className="ml-2 text-xs underline" aria-label="Remove">remove</button></form>
   );

@@ -18,10 +18,10 @@ export async function updateStatus(formData: FormData) {
   const id = Number(formData.get("id"));
   const status = String(formData.get("status"));
   const note = String(formData.get("note") ?? "").slice(0, 500);
-  if (!(ORDER_STATUSES as readonly string[]).includes(status) || !get("SELECT 1 FROM orders WHERE id = ?", id)) redirect(`/admin/orders/${id}?error=Invalid status`);
-  tx(() => {
-    run("UPDATE orders SET status = ?, updated_at = datetime('now') WHERE id = ?", status, id);
-    run("INSERT INTO order_status_history(order_id, status, note, user_id) VALUES(?,?,?,?)", id, status, note, staff.id);
+  if (!(ORDER_STATUSES as readonly string[]).includes(status) || !await get("SELECT 1 FROM orders WHERE id = ?", id)) redirect(`/admin/orders/${id}?error=Invalid status`);
+  await tx(async () => {
+    await run("UPDATE orders SET status = ?, updated_at = utcnow() WHERE id = ?", status, id);
+    await run("INSERT INTO order_status_history(order_id, status, note, user_id) VALUES(?,?,?,?)", id, status, note, staff.id);
   });
   revalidatePath(`/admin/orders/${id}`);
   redirect(`/admin/orders/${id}?saved=1`);
@@ -32,7 +32,7 @@ export async function setHandoff(formData: FormData) {
   const id = Number(formData.get("id"));
   const h = String(formData.get("handoff"));
   if ((HANDOFF_STATES as readonly string[]).includes(h)) {
-    run("UPDATE orders SET handoff_status = ?, updated_at = datetime('now') WHERE id = ?", h, id);
+    await run("UPDATE orders SET handoff_status = ?, updated_at = utcnow() WHERE id = ?", h, id);
   }
   redirect(`/admin/orders/${id}?saved=1`);
 }
@@ -41,7 +41,7 @@ export async function addNote(formData: FormData) {
   const staff = await requirePerm("orders");
   const id = Number(formData.get("id"));
   const note = String(formData.get("note") ?? "").trim().slice(0, 1000);
-  if (note && get("SELECT 1 FROM orders WHERE id = ?", id)) run("INSERT INTO order_notes(order_id, user_id, note) VALUES(?,?,?)", id, staff.id, note);
+  if (note && await get("SELECT 1 FROM orders WHERE id = ?", id)) await run("INSERT INTO order_notes(order_id, user_id, note) VALUES(?,?,?)", id, staff.id, note);
   redirect(`/admin/orders/${id}?saved=1`);
 }
 
@@ -52,16 +52,16 @@ export async function saveFinance(formData: FormData) {
   const fee = intOrNull(formData.get("delivery_fee"));
   const total = intOrNull(formData.get("final_total"));
   if (Number.isNaN(fee) || Number.isNaN(total)) redirect(`/admin/orders/${id}?error=Amounts must be whole numbers of TSh`);
-  const items = get<{ n: number }>("SELECT COUNT(*) n FROM order_items WHERE order_id = ?", id)!.n;
-  tx(() => {
+  const items = (await get<{ n: number }>("SELECT COUNT(*) n FROM order_items WHERE order_id = ?", id))!.n;
+  await tx(async () => {
     for (const [k, v] of formData.entries()) {
       const m = /^cp_(\d+)$/.exec(k);
       if (!m) continue;
       const price = intOrNull(v);
       if (Number.isNaN(price)) throw new Error("bad price");
-      run("UPDATE order_items SET confirmed_unit_price = ? WHERE id = ? AND order_id = ?", price, Number(m[1]), id);
+      await run("UPDATE order_items SET confirmed_unit_price = ? WHERE id = ? AND order_id = ?", price, Number(m[1]), id);
     }
-    run("UPDATE orders SET delivery_fee = ?, final_total = ?, updated_at = datetime('now') WHERE id = ?", fee, total, id);
+    await run("UPDATE orders SET delivery_fee = ?, final_total = ?, updated_at = utcnow() WHERE id = ?", fee, total, id);
   });
   void items;
   revalidatePath(`/admin/orders/${id}`);

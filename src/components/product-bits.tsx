@@ -1,4 +1,4 @@
-import { effectiveStock, hasKnownPrice, STOCK_LABEL, type Product } from "@/lib/catalog";
+import { effectiveStock, hasKnownPrice, STOCK_LABEL, type Product } from "@/lib/stock";
 import { SITE, tsh, waLink } from "@/lib/site";
 
 export function StockBadge({ p }: { p: Pick<Product, "stock_qty" | "stock_status" | "low_stock_threshold"> }) {
