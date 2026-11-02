@@ -7,6 +7,7 @@ export type SearchParams = {
   make?: string;
   model?: string;
   brand?: string;
+  type?: string; // exact part name
   avail?: string; // "available" = in stock or low stock
   sort?: string;
   page?: number;
@@ -56,6 +57,10 @@ export async function searchProducts(params: SearchParams) {
   if (params.category) {
     where.push("c.slug = ?");
     args.push(params.category);
+  }
+  if (params.type) {
+    where.push("lower(p.name) = lower(?)");
+    args.push(params.type);
   }
   if (params.brand) {
     where.push("lower(p.brand) = lower(?)");
@@ -133,4 +138,29 @@ export async function filterOptions() {
       )
     ).map((r) => r.brand),
   };
+}
+
+export type PartType = { name: string; n: number; min_price: number | null; max_price: number | null; image: string | null; category_name: string | null };
+
+/** One row per distinct part name, so browsing shows "ABS Sensor (14 part numbers)" instead of 14 near-identical cards. */
+export async function searchPartTypes(opts: { category?: string; page?: number; pageSize?: number }) {
+  const where = [PUBLIC_WHERE];
+  const args: unknown[] = [];
+  if (opts.category) {
+    where.push("c.slug = ?");
+    args.push(opts.category);
+  }
+  const from = `FROM products p LEFT JOIN categories c ON c.id = p.category_id WHERE ${where.join(" AND ")}`;
+  const pageSize = opts.pageSize ?? 24;
+  const page = Math.max(1, opts.page ?? 1);
+  const total = ((await get<{ n: number }>(`SELECT COUNT(DISTINCT p.name) AS n ${from}`, ...args))?.n) ?? 0;
+  const items = await all<PartType>(
+    `SELECT p.name, COUNT(*) AS n,
+       MIN(CASE WHEN p.price_mode = 'exact' AND p.price_tzs > 0 THEN p.price_tzs END) AS min_price,
+       MAX(CASE WHEN p.price_mode = 'exact' AND p.price_tzs > 0 THEN p.price_tzs END) AS max_price,
+       MAX(p.main_image) AS image, MAX(c.name) AS category_name
+     ${from} GROUP BY p.name ORDER BY p.name LIMIT ? OFFSET ?`,
+    ...args, pageSize, (page - 1) * pageSize,
+  );
+  return { total, page, pageSize, items };
 }

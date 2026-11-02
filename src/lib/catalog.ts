@@ -35,10 +35,11 @@ export async function vehicleSummary(id: number, max = 2) {
   return uniq.length > max ? `${uniq.slice(0, max).join(", ")} +${uniq.length - max} more` : uniq.join(", ");
 }
 
-export type CategoryRow = { id: number; name: string; slug: string; description: string; image_url: string | null; published: number; display_order: number; n: number };
+export type CategoryRow = { id: number; name: string; slug: string; description: string; image_url: string | null; published: number; display_order: number; n: number; cover: string | null };
 export function categories(onlyPublished = true) {
   return all<CategoryRow>(
-    `SELECT c.*, (SELECT COUNT(*) FROM products p WHERE p.category_id = c.id AND p.published = 1 AND p.archived = 0) AS n
+    `SELECT c.*, (SELECT COUNT(*) FROM products p WHERE p.category_id = c.id AND p.published = 1 AND p.archived = 0) AS n,
+       COALESCE(c.image_url, (SELECT p.main_image FROM products p WHERE p.category_id = c.id AND p.published = 1 AND p.archived = 0 AND p.main_image IS NOT NULL ORDER BY p.id LIMIT 1)) AS cover
      FROM categories c ${onlyPublished ? "WHERE c.published = 1" : ""} ORDER BY c.display_order, c.name`,
   );
 }

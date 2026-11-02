@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 
-export type Cat = { id: number; name: string; slug: string; description: string; n: number };
+export type Cat = { id: number; name: string; slug: string; description: string; n: number; cover?: string | null };
 
 const COLLAPSED = 8;
 
@@ -53,8 +53,15 @@ export function CategoryBrowser({ cats, variant = "page" }: { cats: Cat[]; varia
             <li key={c.id}>
               <Link
                 href={`/category/${c.slug}`}
-                className="group flex h-full flex-col rounded-2xl border border-line bg-white p-4 transition duration-300 hover:-translate-y-1 hover:border-brand/50 hover:shadow-[0_18px_34px_-20px_rgba(23,24,27,0.5)]"
+                className="group flex h-full flex-col overflow-hidden rounded-2xl border border-line bg-white transition duration-300 hover:-translate-y-1 hover:border-brand/50 hover:shadow-[0_18px_34px_-20px_rgba(23,24,27,0.5)]"
               >
+                {c.cover && (
+                  <span className="block h-28 overflow-hidden bg-white">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={c.cover} alt="" loading="lazy" className="h-full w-full object-contain p-2 transition duration-700 group-hover:scale-110" />
+                  </span>
+                )}
+                <span className="flex flex-1 flex-col border-t border-line p-4">
                 <span className="flex items-start justify-between gap-2">
                   <span className="display text-xl leading-tight">{c.name}</span>
                   <span className="mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-full bg-surface text-brand transition group-hover:bg-brand group-hover:text-white">
@@ -64,6 +71,7 @@ export function CategoryBrowser({ cats, variant = "page" }: { cats: Cat[]; varia
                 <span className="mt-1 line-clamp-2 text-xs text-muted">{c.description}</span>
                 <span className="mt-3 text-[11px] font-bold uppercase tracking-wider text-brand">
                   {c.n} {c.n === 1 ? "part" : "parts"}
+                </span>
                 </span>
               </Link>
             </li>
