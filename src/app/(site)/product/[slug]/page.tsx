@@ -4,7 +4,9 @@ import Link from "next/link";
 import {
   altNumbers, AUTH_LABEL, vehicleSummaries, compatLabel, compatOf, effectiveStock, hasKnownPrice, maxOrderQty, productImages, publicProductBySlug, relatedProducts,
 } from "@/lib/catalog";
+import { getT } from "@/lib/i18n-server";
 import { SITE, waLink } from "@/lib/site";
+import { AskButton } from "@/components/ask-button";
 import { buildProductEnquiry } from "@/lib/whatsapp";
 import { AddToCart } from "@/components/add-to-cart";
 import { EnquireButton, Price, ProductImage, StockBadge } from "@/components/product-bits";
@@ -25,6 +27,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function ProductPage({ params }: Props) {
+  const t = await getT();
   const p = await publicProductBySlug((await params).slug);
   if (!p) notFound();
   const images = await productImages(p.id);
@@ -58,7 +61,7 @@ export default async function ProductPage({ params }: Props) {
     <div className="container-x py-6">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c") }} />
       <nav aria-label="Breadcrumb" className="text-xs text-muted">
-        <Link href="/">Home</Link> / <Link href="/shop">Shop</Link>
+        <Link href="/">{t("Home")}</Link> / <Link href="/shop">{t("Shop")}</Link>
         {p.category_slug && <> / <Link href={`/category/${p.category_slug}`}>{p.category_name}</Link></>} / {p.name}
       </nav>
 
@@ -81,51 +84,51 @@ export default async function ProductPage({ params }: Props) {
         <div className="space-y-4">
           {p.brand && <p className="text-xs font-bold uppercase text-muted">{p.brand}</p>}
           <h1 className="text-4xl">{p.name}</h1>
-          <p className="partno text-sm"><span className="font-bold">OEM / Part No:</span> {p.oem_number || "To be confirmed"}</p>
+          <p className="partno text-sm"><span className="font-bold">{t("OEM / Part No:")}</span> {p.oem_number || t("To be confirmed")}</p>
           {alts.length > 0 && (
-            <p className="partno text-sm"><span className="font-bold">Alternative part numbers:</span> {alts.map((a) => a.part_number).join(", ")}</p>
+            <p className="partno text-sm"><span className="font-bold">{t("Alternative part numbers:")}</span> {alts.map((a) => a.part_number).join(", ")}</p>
           )}
           <div className="flex flex-wrap items-center gap-2">
             <StockBadge p={p} />
-            <span className="badge bg-surface text-muted">{AUTH_LABEL[p.authenticity] ?? "Not yet verified"}</span>
+            <span className="badge bg-surface text-muted">{t(AUTH_LABEL[p.authenticity] ?? "Not yet verified")}</span>
             <span className="badge bg-surface text-muted">{p.condition}</span>
           </div>
           <Price p={p} large />
 
           <div className="card card-grey space-y-3 p-4">
             <AddToCart productId={p.id} maxQty={maxOrderQty(p)} />
-            <a href={waLink(enquiry)} target="_blank" rel="noopener" className="btn btn-wa w-full">Buy via WhatsApp</a>
-            {!hasKnownPrice(p) && <EnquireButton name={p.name} partNumber={p.oem_number} className="w-full" />}
+            <a href={waLink(enquiry)} target="_blank" rel="noopener" className="btn btn-wa w-full">{t("Buy via WhatsApp")}</a>
+            <AskButton name={p.name} partNumber={p.oem_number} slug={p.slug} className="w-full" label={t("Ask about this part")} />
           </div>
 
           <p className="rounded-md border-l-4 border-brand bg-surface p-3 text-sm">
-            Vehicle compatibility can vary by model, year, chassis, and engine. Please confirm the part number and vehicle details with Woodland before finalizing your order.
+            {t("Vehicle compatibility can vary by model, year, chassis, and engine. Please confirm the part number and vehicle details with Woodland before finalizing your order.")}
           </p>
         </div>
       </div>
 
       <div className="mt-10 grid gap-8 md:grid-cols-2">
         <section>
-          <h2 className="text-2xl">Description</h2>
-          <p className="mt-2 whitespace-pre-line text-sm leading-relaxed">{p.description || "No description has been added yet. Contact us for details."}</p>
+          <h2 className="text-2xl">{t("Description")}</h2>
+          <p className="mt-2 whitespace-pre-line text-sm leading-relaxed">{p.description || t("No description has been added yet. Contact us for details.")}</p>
           <dl className="mt-4 grid grid-cols-2 gap-y-1 text-sm">
-            <dt className="text-muted">Category</dt><dd>{p.category_name ?? "—"}</dd>
-            <dt className="text-muted">Unit</dt><dd>{p.unit}</dd>
+            <dt className="text-muted">{t("Category")}</dt><dd>{p.category_name ?? "—"}</dd>
+            <dt className="text-muted">{t("Unit")}</dt><dd>{p.unit}</dd>
           </dl>
         </section>
         <section>
-          <h2 className="text-2xl">Compatible vehicles</h2>
+          <h2 className="text-2xl">{t("Compatible vehicles")}</h2>
           {compat.length ? (
             <ul className="mt-2 list-disc space-y-1 pl-5 text-sm">{compat.map((c) => <li key={c.id}>{compatLabel(c)}</li>)}</ul>
           ) : (
-            <p className="mt-2 text-sm text-muted">No compatibility recorded yet. Please confirm fitment with our sales team before ordering.</p>
+            <p className="mt-2 text-sm text-muted">{t("No compatibility recorded yet. Please confirm fitment with our sales team before ordering.")}</p>
           )}
         </section>
       </div>
 
       {related.length > 0 && (
         <section className="mt-12">
-          <h2 className="text-3xl">Related products</h2>
+          <h2 className="text-3xl">{t("Related products")}</h2>
           <div className="mt-4 grid grid-cols-2 gap-3 lg:grid-cols-4">{related.map((r) => <ProductCard key={r.id} p={r} vehicle={relatedVehicles.get(r.id)} />)}</div>
         </section>
       )}

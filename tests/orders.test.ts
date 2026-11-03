@@ -143,3 +143,15 @@ describe("whatsapp message", () => {
     expect(W.buildProductEnquiry({ name: "X", partNumber: "1", qty: 1, url: "u" })).toContain("Product Page: u");
   });
 });
+
+describe("order tracking", () => {
+  it("needs the reference and a matching phone number", async () => {
+    const a = await addProduct({ name: "Tracked Part", oem: "TR-1", price: 1000, qty: 5 });
+    const { order } = await O.createOrder({ ...base, whatsapp: "+255 712 345 678", altPhone: "0755 111 222", idempotencyKey: key(), items: [{ productId: a, qty: 1 }] });
+    expect((await O.findOrderForTracking(order.ref, "0712345678"))?.ref).toBe(order.ref); // 0 prefix instead of +255
+    expect((await O.findOrderForTracking(order.ref.toLowerCase(), "+255 755 111 222"))?.ref).toBe(order.ref); // alternative phone
+    expect(await O.findOrderForTracking(order.ref, "0712345679")).toBeUndefined();
+    expect(await O.findOrderForTracking("WIS-20000101-9999", "0712345678")).toBeUndefined();
+    expect(await O.findOrderForTracking(order.ref, "123")).toBeUndefined();
+  });
+});

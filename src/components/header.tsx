@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { categories } from "@/lib/catalog";
+import { getT } from "@/lib/i18n-server";
 import { SITE, waLink } from "@/lib/site";
+import { LangToggle } from "./lang-toggle";
 import { CartLink } from "./cart-link";
 import { SearchBox } from "./search-box";
 
@@ -34,6 +36,7 @@ const SHORT: Record<string, string> = {
 const BAR = ["engine-parts", "suspension-parts", "brake-systems", "filters-lubricants", "electrical-parts", "lighting-systems", "body-parts"];
 
 export async function Header() {
+  const t = await getT();
   const cats = await categories();
   const bar = BAR.map((s) => cats.find((c) => c.slug === s)).filter((c): c is NonNullable<typeof c> => !!c);
 
@@ -41,12 +44,13 @@ export async function Header() {
     <header className="sticky top-0 z-40 no-print">
       <div className="topbar">
         <div className="container-x flex items-center justify-between gap-3 py-2 text-[11px] font-bold uppercase tracking-wide sm:text-xs">
-          <span className="flex items-center gap-1.5"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2"><path d="M12 2l8 4v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6z" /></svg>Genuine auto spare parts</span>
+          <span className="flex items-center gap-1.5"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2"><path d="M12 2l8 4v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6z" /></svg>{t("Genuine auto spare parts")}</span>
           <span className="hidden items-center gap-1.5 sm:flex"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2"><path d="M12 21s-7-6.2-7-11a7 7 0 0114 0c0 4.8-7 11-7 11z" /><circle cx="12" cy="10" r="2.5" /></svg>Kariakoo, Dar es Salaam</span>
           <a href={waLink()} target="_blank" rel="noopener" className="flex items-center gap-1.5">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="#25d366"><path d={WA_ICON} /></svg>
-            <span className="hidden sm:inline">WhatsApp ordering available</span><span className="sm:hidden">WhatsApp us</span>
+            <span className="hidden sm:inline">{t("WhatsApp ordering available")}</span><span className="sm:hidden">{t("WhatsApp us")}</span>
           </a>
+          <LangToggle />
           <a href={SITE.instagramUrl} target="_blank" rel="noopener" aria-label="Instagram" className="hidden sm:block">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="5" /><circle cx="12" cy="12" r="4" /><circle cx="17.5" cy="6.5" r="1" fill="currentColor" /></svg>
           </a>
@@ -57,12 +61,13 @@ export async function Header() {
         <div className="container-x flex items-center gap-3 py-2.5">
           <Logo />
           <div className="ml-4 hidden max-w-xl flex-1 md:block"><SearchBox button /></div>
-          <a href={waLink()} className="btn btn-wa ml-auto hidden whitespace-nowrap md:inline-flex" target="_blank" rel="noopener">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d={WA_ICON} /></svg>WhatsApp us
+          <Link href="/track" className="ml-auto hidden whitespace-nowrap text-sm font-bold hover:text-brand md:inline">{t("Track order")}</Link>
+          <a href={waLink()} className="btn btn-wa hidden whitespace-nowrap md:inline-flex" target="_blank" rel="noopener">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d={WA_ICON} /></svg>{t("WhatsApp us")}
           </a>
           <div className="ml-auto flex items-center gap-1.5 md:ml-0">
             <details className="relative md:hidden">
-              <summary className="flex h-11 w-11 cursor-pointer list-none items-center justify-center rounded-lg" aria-label="Search">
+              <summary className="flex h-11 w-11 cursor-pointer list-none items-center justify-center rounded-lg" aria-label={t("Search")}>
                 <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg>
               </summary>
               <div className="fixed inset-x-0 top-[88px] z-50 border-b border-line bg-white p-3 shadow-xl"><SearchBox /></div>
@@ -73,10 +78,10 @@ export async function Header() {
                 <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4"><path d="M3 6h18M3 12h18M3 18h18" /></svg>
               </summary>
               <div className="absolute right-0 top-12 z-50 max-h-[75vh] w-72 overflow-auto rounded-xl border border-line bg-white p-2 shadow-2xl">
-                {[{ href: "/shop", label: "Shop all parts" }, { href: "/categories", label: "Categories" }, { href: "/finder", label: "Vehicle finder" }, { href: "/contact", label: "Contact us" }, { href: "/about", label: "About Woodland" }, { href: "/faq", label: "FAQ" }].map((n) => (
-                  <Link key={n.href} href={n.href} className="block rounded-lg px-3 py-3 text-sm font-semibold hover:bg-surface">{n.label}</Link>
+                {[{ href: "/shop", label: "Shop all parts" }, { href: "/categories", label: "Categories" }, { href: "/finder", label: "Vehicle finder" }, { href: "/track", label: "Track order" }, { href: "/contact", label: "Contact us" }, { href: "/about", label: "About Woodland" }, { href: "/faq", label: "FAQ" }].map((n) => (
+                  <Link key={n.href} href={n.href} className="block rounded-lg px-3 py-3 text-sm font-semibold hover:bg-surface">{t(n.label)}</Link>
                 ))}
-                <a href={`tel:+${SITE.whatsapp}`} className="block rounded-lg px-3 py-3 text-sm font-semibold hover:bg-surface">Call {SITE.whatsappDisplay}</a>
+                <a href={`tel:+${SITE.whatsapp}`} className="block rounded-lg px-3 py-3 text-sm font-semibold hover:bg-surface">{t("Call")} {SITE.whatsappDisplay}</a>
               </div>
             </details>
           </div>
@@ -88,22 +93,22 @@ export async function Header() {
           <details className="group relative">
             <summary className="flex h-12 cursor-pointer list-none items-center gap-2 pr-5">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6"><path d="M3 6h18M3 12h18M3 18h18" /></svg>
-              Shop all
+              {t("Shop all")}
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.5"><path d="m6 9 6 6 6-6" /></svg>
             </summary>
             <div className="absolute left-0 top-12 z-50 grid w-[560px] grid-cols-2 gap-1 rounded-b-xl border border-line bg-white p-3 text-ink shadow-2xl">
-              <Link href="/shop" className="col-span-2 rounded-lg bg-surface px-3 py-2.5 text-sm font-extrabold uppercase text-brand">All spare parts</Link>
+              <Link href="/shop" className="col-span-2 rounded-lg bg-surface px-3 py-2.5 text-sm font-extrabold uppercase text-brand">{t("All spare parts")}</Link>
               {cats.map((c) => (
-                <Link key={c.id} href={`/category/${c.slug}`} className="rounded-lg px-3 py-2.5 text-sm font-semibold normal-case hover:bg-surface">{c.name}</Link>
+                <Link key={c.id} href={`/category/${c.slug}`} className="rounded-lg px-3 py-2.5 text-sm font-semibold normal-case hover:bg-surface">{t(c.name)}</Link>
               ))}
             </div>
           </details>
           {bar.map((c) => (
-            <Link key={c.id} href={`/category/${c.slug}`} className="flex h-12 items-center border-l border-white/25 px-4 transition hover:bg-white/10">{SHORT[c.slug] ?? c.name}</Link>
+            <Link key={c.id} href={`/category/${c.slug}`} className="flex h-12 items-center border-l border-white/25 px-4 transition hover:bg-white/10">{t(SHORT[c.slug] ?? c.name)}</Link>
           ))}
           <Link href="/finder" className="ml-auto flex h-12 items-center gap-2 border-l border-white/25 pl-5">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M5 16l1.5-5h11L19 16M5 16v3h2v-1.5h10V19h2v-3M5 16h14M8 13h.01M16 13h.01" /></svg>
-            Vehicle finder
+            {t("Vehicle finder")}
           </Link>
         </div>
       </nav>

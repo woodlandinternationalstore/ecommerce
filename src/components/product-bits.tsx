@@ -1,7 +1,11 @@
+"use client";
+
+import { useT } from "@/lib/i18n";
 import { effectiveStock, hasKnownPrice, STOCK_LABEL, type Product } from "@/lib/stock";
 import { SITE, tsh, waLink } from "@/lib/site";
 
 export function StockBadge({ p }: { p: Pick<Product, "stock_qty" | "stock_status" | "low_stock_threshold"> }) {
+  const t = useT();
   const s = effectiveStock(p);
   const cls = {
     in_stock: "bg-green-100 text-green-800",
@@ -9,14 +13,15 @@ export function StockBadge({ p }: { p: Pick<Product, "stock_qty" | "stock_status
     out_of_stock: "bg-red-100 text-red-800",
     tbc: "bg-surface text-muted",
   }[s];
-  return <span className={`badge ${cls}`}>{STOCK_LABEL[s]}</span>;
+  return <span className={`badge ${cls}`}>{t(STOCK_LABEL[s])}</span>;
 }
 
 export function Price({ p, large = false }: { p: Product; large?: boolean }) {
+  const t = useT();
   if (hasKnownPrice(p)) {
     return (
       <div>
-        <span className={`font-bold ${large ? "text-3xl" : "text-lg"}`}>{tsh(p.price_tzs!)}</span>
+        <span className={`font-extrabold ${large ? "text-3xl" : "text-lg"}`}>{tsh(p.price_tzs!)}</span>
         {p.previous_price_tzs && p.previous_price_tzs > p.price_tzs! && (
           <span className="ml-2 text-sm text-muted line-through">{tsh(p.previous_price_tzs)}</span>
         )}
@@ -25,17 +30,18 @@ export function Price({ p, large = false }: { p: Product; large?: boolean }) {
   }
   return (
     <div>
-      <span className={`display text-brand ${large ? "text-2xl" : "text-base"}`}>Price on request</span>
+      <span className={`display text-brand ${large ? "text-2xl" : "text-base"}`}>{t("Price on request")}</span>
       {p.price_mode === "message" && p.price_message && <p className="mt-1 text-sm text-muted">{p.price_message}</p>}
     </div>
   );
 }
 
 export function ProductImage({ src, alt, className = "" }: { src: string | null; alt: string; className?: string }) {
+  const t = useT();
   if (!src) {
     return (
-      <div className={`flex items-center justify-center bg-gradient-to-br from-surface to-white text-center text-xs font-bold uppercase tracking-wide text-silver ${className}`} role="img" aria-label={`${alt} (photo not yet available)`}>
-        Photo coming soon
+      <div className={`flex items-center justify-center bg-gradient-to-br from-surface to-white text-center text-xs font-bold uppercase tracking-wide text-silver ${className}`} role="img" aria-label={`${alt} (${t("Photo coming soon")})`}>
+        {t("Photo coming soon")}
       </div>
     );
   }
@@ -44,10 +50,11 @@ export function ProductImage({ src, alt, className = "" }: { src: string | null;
 }
 
 export function EnquireButton({ name, partNumber, className = "" }: { name: string; partNumber: string; className?: string }) {
+  const t = useT();
   const text = `WOODLAND INTERNATIONAL STORE\nPRICE ENQUIRY\nProduct: ${name}\nPart Number: ${partNumber || "-"}\nPlease confirm the price and availability.`;
   return (
     <a href={waLink(text, SITE.whatsapp)} target="_blank" rel="noopener" className={`btn btn-wa btn-sm ${className}`}>
-      Enquire via WhatsApp
+      {t("Enquire via WhatsApp")}
     </a>
   );
 }

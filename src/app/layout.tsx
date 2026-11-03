@@ -2,6 +2,8 @@ import type { Metadata, Viewport } from "next";
 import { Barlow, Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { CartProvider } from "@/lib/cart";
+import { I18nProvider } from "@/lib/i18n";
+import { getLang } from "@/lib/i18n-server";
 import { SITE } from "@/lib/site";
 
 const barlow = Barlow({ subsets: ["latin"], weight: ["600", "700", "800"], style: ["normal", "italic"], variable: "--font-barlow", display: "swap" });
@@ -19,13 +21,16 @@ export const metadata: Metadata = {
 };
 export const viewport: Viewport = { width: "device-width", initialScale: 1, themeColor: "#c8102e" };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const lang = await getLang();
   return (
-    <html lang="en" className={`${barlow.variable} ${inter.variable} ${mono.variable}`}>
+    <html lang={lang} className={`${barlow.variable} ${inter.variable} ${mono.variable}`}>
       <body>
-        <CartProvider>
-          {children}
-        </CartProvider>
+        <I18nProvider lang={lang}>
+          <CartProvider>
+            {children}
+          </CartProvider>
+        </I18nProvider>
       </body>
     </html>
   );

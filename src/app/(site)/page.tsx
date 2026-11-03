@@ -1,12 +1,14 @@
 import Link from "next/link";
 import { categories, featuredProducts, vehicleSummaries, effectiveStock, maxOrderQty } from "@/lib/catalog";
 import { all } from "@/lib/db";
+import { getT } from "@/lib/i18n-server";
 import { SITE, tsh, waLink } from "@/lib/site";
 import { AddToCart } from "@/components/add-to-cart";
+import { AskButton } from "@/components/ask-button";
 import { Gear } from "@/components/gear";
 import { HomeFinder, type FinderMake } from "@/components/home-finder";
 import { Reveal } from "@/components/motion";
-import { EnquireButton, ProductImage, StockBadge } from "@/components/product-bits";
+import { ProductImage, StockBadge } from "@/components/product-bits";
 
 const WA_ICON = "M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2zm5.4 14.2c-.2.6-1.3 1.2-1.8 1.2-.5.1-1 .2-3.3-.7-2.8-1.2-4.6-4-4.7-4.2-.1-.2-1.1-1.5-1.1-2.8s.7-2 .9-2.3c.2-.3.5-.3.7-.3h.5c.2 0 .4 0 .6.5.2.6.8 2 .9 2.2.1.1.1.3 0 .5-.1.2-.1.3-.3.5l-.4.5c-.1.1-.3.3-.1.6.2.3.7 1.2 1.5 1.9 1 .9 1.9 1.2 2.2 1.3.3.1.4.1.6-.1.2-.2.7-.8.9-1.1.2-.3.4-.2.6-.1l2 1c.3.1.5.2.5.3.1.2.1.8-.1 1.4z";
 
@@ -20,6 +22,7 @@ const WHY = [
 ] as const;
 
 export default async function Home() {
+  const t = await getT();
   const [cats, featured] = await Promise.all([categories(), featuredProducts(10)]);
   const [vehicles, makeRows, modelRows, genRows] = await Promise.all([
     vehicleSummaries(featured.map((p) => p.id)),
@@ -39,17 +42,17 @@ export default async function Home() {
         <div className="container-x relative grid items-center lg:grid-cols-[0.95fr_1.25fr]">
           <div className="relative z-10 py-8 lg:py-14">
             <h1 className="hero-in text-[clamp(2.2rem,5.6vw,4.2rem)]" style={{ "--d": "60ms" } as React.CSSProperties}>
-              The right part.<br /><span className="text-brand">The right fit.</span><br />The Woodland standard.
+              {t("The right part.")}<br /><span className="text-brand">{t("The right fit.")}</span><br />{t("The Woodland standard.")}
             </h1>
             <p className="hero-in mt-4 max-w-md text-[15px] font-medium text-ink-2" style={{ "--d": "260ms" } as React.CSSProperties}>
-              Find quality automotive spare parts for Toyota, Nissan, Ford, Mitsubishi, Foton and other supported vehicle brands. Find the part you need and confirm your order directly with us.
+              {t("Find quality automotive spare parts for Toyota, Nissan, Ford, Mitsubishi, Foton and other supported vehicle brands. Find the part you need and confirm your order directly with us.")}
             </p>
             <div className="hero-in mt-6 flex flex-col gap-3 sm:flex-row" style={{ "--d": "420ms" } as React.CSSProperties}>
-              <Link href="/shop" className="btn btn-red">Shop all parts <span aria-hidden="true">→</span></Link>
-              <Link href="/finder" className="btn btn-outline hidden border-brand text-brand sm:inline-flex">Find parts for my vehicle <span aria-hidden="true">→</span></Link>
+              <Link href="/shop" className="btn btn-red">{t("Shop all parts")} <span aria-hidden="true">→</span></Link>
+              <Link href="/finder" className="btn btn-outline hidden border-brand text-brand sm:inline-flex">{t("Find parts for my vehicle")} <span aria-hidden="true">→</span></Link>
             </div>
             <ul className="hero-in mt-6 hidden gap-6 text-xs font-bold leading-tight sm:flex" style={{ "--d": "560ms" } as React.CSSProperties}>
-              {[["Automotive", "Spare parts"], ["Vehicle fitment", "assistance"], ["Direct WhatsApp", "ordering"]].map(([a, b], i) => (
+              {[[t("Automotive"), t("Spare parts")], [t("Vehicle fitment"), t("assistance")], [t("Direct WhatsApp"), t("ordering")]].map(([a, b], i) => (
                 <li key={a} className={`flex items-center gap-2 ${i ? "border-l border-line pl-6" : ""}`}>
                   <span className="grid h-8 w-8 place-items-center rounded-lg bg-brand/10 text-brand">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4"><path d="M5 12l5 5L20 7" /></svg>
@@ -76,8 +79,8 @@ export default async function Home() {
             <div className="relative flex items-center gap-4 bg-brand p-5 text-white lg:slant-red">
               <svg width="54" height="54" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" className="shrink-0"><path d="M5 16l1.5-5h11L19 16M5 16v3h2v-1.5h10V19h2v-3M5 16h14M8 13h.01M16 13h.01" /></svg>
               <div>
-                <h2 className="text-xl leading-tight sm:text-2xl">Find the right part for your vehicle</h2>
-                <p className="mt-1 text-xs text-white/85">Start with your vehicle details to discover compatible spare parts.</p>
+                <h2 className="text-xl leading-tight sm:text-2xl">{t("Find the right part for your vehicle")}</h2>
+                <p className="mt-1 text-xs text-white/85">{t("Start with your vehicle details to discover compatible spare parts.")}</p>
               </div>
             </div>
             <div className="p-4 sm:p-5"><HomeFinder makes={makes} /></div>
@@ -90,10 +93,10 @@ export default async function Home() {
         <Reveal>
           <div className="flex items-end justify-between gap-3">
             <div className="flex flex-wrap items-baseline gap-x-4">
-              <h2 className="bar-title text-2xl sm:text-3xl">Shop by category</h2>
-              <p className="hidden text-xs text-muted sm:block">Everything you need to keep your vehicle performing at its best.</p>
+              <h2 className="bar-title text-2xl sm:text-3xl">{t("Shop by category")}</h2>
+              <p className="hidden text-xs text-muted sm:block">{t("Everything you need to keep your vehicle performing at its best.")}</p>
             </div>
-            <Link href="/categories" className="btn btn-outline btn-sm whitespace-nowrap">View all categories <span aria-hidden="true">→</span></Link>
+            <Link href="/categories" className="btn btn-outline btn-sm whitespace-nowrap">{t("View all categories")} <span aria-hidden="true">→</span></Link>
           </div>
           <ul className="mt-4 grid grid-cols-3 gap-2.5 sm:grid-cols-4 lg:flex lg:gap-2 lg:overflow-x-auto lg:pb-2 lg:[scrollbar-width:none]">
             {cats.map((c) => (
@@ -106,7 +109,7 @@ export default async function Home() {
                       : <span className="grid h-full place-items-center text-silver"><Gear teeth={10} className="h-10 w-10" /></span>}
                   </span>
                   <span className="flex flex-1 items-center justify-between gap-1 px-2 pb-2.5 pt-1 text-[12px] font-bold leading-tight">
-                    <span>{c.name}</span><span className="text-brand" aria-hidden="true">→</span>
+                    <span>{t(c.name)}</span><span className="text-brand" aria-hidden="true">→</span>
                   </span>
                 </Link>
               </li>
@@ -119,8 +122,8 @@ export default async function Home() {
       <section className="container-x mt-10">
         <Reveal>
           <div className="flex items-end justify-between gap-3">
-            <h2 className="bar-title text-2xl sm:text-3xl">Featured products</h2>
-            <Link href="/shop" className="btn btn-outline btn-sm whitespace-nowrap">View all products <span aria-hidden="true">→</span></Link>
+            <h2 className="bar-title text-2xl sm:text-3xl">{t("Featured products")}</h2>
+            <Link href="/shop" className="btn btn-outline btn-sm whitespace-nowrap">{t("View all products")} <span aria-hidden="true">→</span></Link>
           </div>
         </Reveal>
         {featured.length ? (
@@ -137,11 +140,10 @@ export default async function Home() {
                     {vehicles.get(p.id) && <span className="text-[11px] text-muted">{vehicles.get(p.id)}</span>}
                     {effectiveStock(p) !== "tbc" && <span><StockBadge p={p} /></span>}
                     <span className="mt-auto pt-1 text-base font-extrabold text-brand">
-                      {p.price_mode === "exact" && p.price_tzs ? tsh(p.price_tzs) : <span className="text-sm">Price on request</span>}
+                      {p.price_mode === "exact" && p.price_tzs ? tsh(p.price_tzs) : <span className="text-sm">{t("Price on request")}</span>}
                     </span>
-                    {p.price_mode === "exact" && p.price_tzs
-                      ? <AddToCart productId={p.id} maxQty={maxOrderQty(p)} compact />
-                      : <EnquireButton name={p.name} partNumber={p.oem_number} className="w-full" />}
+                    <AddToCart productId={p.id} maxQty={maxOrderQty(p)} compact />
+                    <AskButton name={p.name} partNumber={p.oem_number} slug={p.slug} className="w-full" />
                   </div>
                 </article>
               </Reveal>
@@ -149,8 +151,8 @@ export default async function Home() {
           </div>
         ) : (
           <div className="card card-grey mt-4 p-6 text-center">
-            <p className="font-bold">Featured products will appear here once they are published.</p>
-            <Link href="/shop" className="btn btn-red btn-sm mt-3">Browse all products</Link>
+            <p className="font-bold">{t("Featured products will appear here once they are published.")}</p>
+            <Link href="/shop" className="btn btn-red btn-sm mt-3">{t("Browse all products")}</Link>
           </div>
         )}
       </section>
@@ -158,10 +160,10 @@ export default async function Home() {
       {/* ---------------- TRUST STRIP (mobile) ---------------- */}
       <section className="container-x mt-8 lg:hidden">
         <ul className="grid grid-cols-3 divide-x divide-line rounded-xl bg-surface py-3 text-center text-[11px] font-bold leading-tight">
-          {["Genuine parts", "Trusted service", "Best prices"].map((t) => (
-            <li key={t} className="flex flex-col items-center gap-1 px-2">
+          {["Genuine parts", "Trusted service", "Best prices"].map((label) => (
+            <li key={label} className="flex flex-col items-center gap-1 px-2">
               <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-ink"><path d="M12 2l8 4v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6zM8.5 12l2.5 2.5L15.5 10" /></svg>
-              {t}
+              {t(label)}
             </li>
           ))}
         </ul>
@@ -171,22 +173,22 @@ export default async function Home() {
       <section className="mt-10 overflow-hidden bg-white lg:mt-12">
         <div className="hidden bg-white lg:grid lg:grid-cols-[250px_1fr_360px]">
           <div className="flex items-center bg-ink px-8 py-6 [clip-path:polygon(0_0,100%_0,88%_100%,0_100%)]">
-            <h2 className="text-3xl leading-none text-white">Why choose<br />Woodland?</h2>
+            <h2 className="text-3xl leading-none text-white">{t("Why choose Woodland?")}</h2>
           </div>
           <ul className="grid grid-cols-6 items-center divide-x divide-line">
-            {WHY.map(([t, d]) => (
-              <li key={t} className="flex flex-col items-center gap-2 px-2 py-4 text-center text-[10.5px] font-extrabold uppercase leading-tight">
+            {WHY.map(([label, d]) => (
+              <li key={label} className="flex flex-col items-center gap-2 px-2 py-4 text-center text-[10.5px] font-extrabold uppercase leading-tight">
                 <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#c8102e" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><path d={d} /></svg>
-                {t}
+                {t(label)}
               </li>
             ))}
           </ul>
-          <ContactBlock />
+          <ContactBlock t={t} />
         </div>
         <div className="container-x grid gap-3 pb-6 lg:hidden">
           <a href={waLink()} target="_blank" rel="noopener" className="flex items-center gap-4 rounded-xl bg-wa p-4 text-[#06230f] shadow-lg">
             <svg width="40" height="40" viewBox="0 0 24 24" fill="currentColor"><path d={WA_ICON} /></svg>
-            <span><span className="display block text-xl">Order directly on WhatsApp</span><span className="text-sm font-semibold">Click to chat with us</span></span>
+            <span><span className="display block text-xl">{t("Order directly on WhatsApp")}</span><span className="text-sm font-semibold">{t("Click to chat with us")}</span></span>
           </a>
           <div className="flex items-center gap-3 rounded-xl bg-brand p-4 text-white">
             <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 21s-7-6.2-7-11a7 7 0 0114 0c0 4.8-7 11-7 11z" /><circle cx="12" cy="10" r="2.5" /></svg>
@@ -201,9 +203,9 @@ export default async function Home() {
           <div className="relative overflow-hidden rounded-2xl bg-ink p-8 text-center text-white sm:p-10">
             <div className="absolute -left-10 -top-10 h-44 w-44 text-brand/30" aria-hidden="true"><Gear teeth={12} className="gear-spin h-full w-full" /></div>
             <div className="absolute -bottom-12 -right-8 h-52 w-52 text-white/[0.06]" aria-hidden="true"><Gear teeth={14} className="gear-spin-rev h-full w-full" /></div>
-            <h2 className="relative text-3xl">Follow us on Instagram</h2>
-            <p className="relative mx-auto mt-2 max-w-lg text-sm text-silver">Follow {SITE.instagramHandle} for new arrivals, product education and updates.</p>
-            <a href={SITE.instagramUrl} target="_blank" rel="noopener" className="btn btn-red relative mt-5">Follow on Instagram</a>
+            <h2 className="relative text-3xl">{t("Follow us on Instagram")}</h2>
+            <p className="relative mx-auto mt-2 max-w-lg text-sm text-silver">{t("Follow {handle} for new arrivals, product education and updates.", { handle: SITE.instagramHandle })}</p>
+            <a href={SITE.instagramUrl} target="_blank" rel="noopener" className="btn btn-red relative mt-5">{t("Follow on Instagram")}</a>
           </div>
         </Reveal>
       </section>
@@ -211,7 +213,7 @@ export default async function Home() {
   );
 }
 
-function ContactBlock() {
+function ContactBlock({ t }: { t: (s: string) => string }) {
   return (
     <div className="relative flex items-center gap-4 bg-brand px-8 py-5 text-white [clip-path:polygon(10%_0,100%_0,100%_100%,0_100%)]">
       <div className="pl-6 text-[11px] font-bold leading-snug">
@@ -221,7 +223,7 @@ function ContactBlock() {
           <a href={`tel:+${SITE.whatsapp}`}>{SITE.whatsappDisplay}</a><br /><a href={`tel:+${SITE.altPhone}`}>{SITE.altPhoneDisplay}</a>
         </p>
       </div>
-      <a href={waLink()} target="_blank" rel="noopener" aria-label="Order on WhatsApp" className="ml-auto grid h-14 w-14 shrink-0 place-items-center rounded-full bg-wa text-[#06230f] pulse">
+      <a href={waLink()} target="_blank" rel="noopener" aria-label={t("Order on WhatsApp")} className="ml-auto grid h-14 w-14 shrink-0 place-items-center rounded-full bg-wa text-[#06230f] pulse">
         <svg width="30" height="30" viewBox="0 0 24 24" fill="currentColor"><path d={WA_ICON} /></svg>
       </a>
     </div>

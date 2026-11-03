@@ -2,10 +2,12 @@
 
 import { useState } from "react";
 import { markWhatsAppOpened } from "@/app/(site)/actions";
+import { useT } from "@/lib/i18n";
 
 export function OrderHandoff({
   reference, token, waUrl, message, autoNote,
 }: { reference: string; token: string; waUrl: string; message: string; autoNote: boolean }) {
+  const t = useT();
   const [copied, setCopied] = useState(false);
   const [showText, setShowText] = useState(false);
 
@@ -22,7 +24,7 @@ export function OrderHandoff({
     <div className="mt-5 space-y-3">
       {autoNote && (
         <p role="status" className="rounded-md bg-amber-50 p-3 text-sm font-bold">
-          Your browser blocked WhatsApp from opening automatically. Tap the green button below.
+          {t("Your browser blocked WhatsApp from opening automatically. Tap the green button below.")}
         </p>
       )}
       <a
@@ -32,13 +34,13 @@ export function OrderHandoff({
         className="btn btn-wa w-full"
         onClick={() => { void markWhatsAppOpened(reference, token); }}
       >
-        Open WhatsApp and send my order
+        {t("Open WhatsApp and send my order")}
       </a>
       <div className="flex flex-wrap gap-2">
-        <button className="btn btn-outline btn-sm" onClick={copy}>{copied ? "Copied" : "Copy order message"}</button>
-        <button className="btn btn-outline btn-sm" onClick={() => setShowText((s) => !s)}>{showText ? "Hide message" : "Show message"}</button>
+        <button className="btn btn-outline btn-sm" onClick={copy}>{copied ? t("Copied") : t("Copy order message")}</button>
+        <button className="btn btn-outline btn-sm" onClick={() => setShowText((s) => !s)}>{showText ? t("Hide message") : t("Show message")}</button>
       </div>
-      <p className="text-xs text-muted">WhatsApp did not open? Copy the message and paste it into a chat with +255 771 889 889.</p>
+      <p className="text-xs text-muted">{t("WhatsApp did not open? Copy the message and paste it into a chat with")} +255 771 889 889.</p>
       {showText && (
         <textarea readOnly rows={14} className="field partno text-xs" value={message} aria-label="Order message" onFocus={(e) => e.currentTarget.select()} />
       )}

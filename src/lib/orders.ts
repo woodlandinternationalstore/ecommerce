@@ -205,3 +205,19 @@ export async function markLinkOpened(ref: string, token: string) {
 
 export const whatsappUrlFor = async (o: OrderRow) => orderWhatsAppUrl(await messageFor(o));
 export const messageTextFor = async (o: OrderRow) => buildOrderMessage(await messageFor(o));
+
+const digitsOf = (s: string) => s.replace(/\D/g, "");
+
+/**
+ * Customer tracking: the order reference and a phone number on the order (WhatsApp or alternative, compared by the
+ * last 9 digits so +255 and 0 prefixes both work) must both match. Returns nothing for any mismatch.
+ */
+export async function findOrderForTracking(refInput: string, phoneInput: string) {
+  const ref = String(refInput).trim().toUpperCase().slice(0, 40);
+  const phone = digitsOf(String(phoneInput)).slice(-9);
+  if (!/^WIS-\d{8}-\d{4}$/.test(ref) || phone.length < 7) return undefined;
+  const o = await get<OrderRow>("SELECT * FROM orders WHERE ref = ?", ref);
+  if (!o) return undefined;
+  const ok = [o.whatsapp, o.alt_phone].some((p) => p && digitsOf(p).slice(-9) === phone);
+  return ok ? o : undefined;
+}

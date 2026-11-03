@@ -44,7 +44,9 @@ body {
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
 }
-h1, h2, h3 { font-family: var(--font-display); font-style: italic; text-transform: uppercase; letter-spacing: -0.01em; font-weight: 800; line-height: 1.02; text-wrap: balance; }
+@layer base {
+  h1, h2, h3 { font-family: var(--font-display); font-style: italic; text-transform: uppercase; letter-spacing: -0.01em; font-weight: 800; line-height: 1.02; text-wrap: balance; }
+}
 .display { font-family: var(--font-display); font-style: italic; text-transform: uppercase; letter-spacing: -0.01em; font-weight: 800; line-height: 1; }
 .partno { font-family: var(--font-mono); font-weight: 700; letter-spacing: -0.01em; overflow-wrap: anywhere; }
 ::selection { background: var(--red); color: #fff; }
