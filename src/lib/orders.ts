@@ -1,7 +1,7 @@
 import crypto from "node:crypto";
 import { z } from "zod";
 import { advisoryLock, all, get, insert, run, tx } from "./db";
-import { compatOf, compatLabel, hasKnownPrice, maxOrderQty, productById, type Product } from "./catalog";
+import { compatOf, compatLabel, hasKnownPrice, maskPrices, maxOrderQty, pricesVisible, productById, type Product } from "./catalog";
 import { buildOrderMessage, orderWhatsAppUrl, type MessageOrder } from "./whatsapp";
 
 export const ORDER_STATUSES = [
@@ -131,7 +131,8 @@ export async function createOrder(input: CheckoutInput) {
 
     const lines: { p: Product; qty: number }[] = [];
     for (const [id, qty] of qtyBy) {
-      const p = await productById(id);
+      const raw = await productById(id);
+      const p = raw ? maskPrices(raw, await pricesVisible()) : raw;
       if (!p || !p.published || p.archived) throw new OrderError("A product in your cart is no longer available. Please review your cart.");
       const max = maxOrderQty(p);
       if (max !== null && qty > max) {

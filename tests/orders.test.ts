@@ -155,3 +155,24 @@ describe("order tracking", () => {
     expect(await O.findOrderForTracking(order.ref, "123")).toBeUndefined();
   });
 });
+
+describe("hidden prices", () => {
+  it("shows price on request and quotes every line later when the owner hides prices", async () => {
+    const a = await addProduct({ name: "Priced Then Hidden", oem: "HP-1", price: 25000, qty: 9 });
+    await D.setSetting("show_prices", "0");
+    C.resetPriceCache();
+    const pub = await C.publicProductBySlug((await C.productById(a))!.slug);
+    expect(pub!.price_mode).toBe("request");
+    expect(pub!.price_tzs).toBeNull();
+    expect((await S.searchProducts({ q: "priced then hidden" })).items[0].price_tzs).toBeNull();
+    const { order } = await O.createOrder({ ...base, idempotencyKey: key(), items: [{ productId: a, qty: 2 }] });
+    expect(order.known_subtotal).toBe(0);
+    expect(order.unknown_count).toBe(1);
+    expect((await O.orderItems(order.id))[0].unit_price).toBeNull();
+    // staff still see the stored price, and turning prices back on restores everything
+    expect((await C.productById(a))!.price_tzs).toBe(25000);
+    await D.setSetting("show_prices", "1");
+    C.resetPriceCache();
+    expect((await C.publicProductBySlug((await C.productById(a))!.slug))!.price_tzs).toBe(25000);
+  });
+});

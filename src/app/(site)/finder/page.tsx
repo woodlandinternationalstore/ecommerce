@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { all, get } from "@/lib/db";
-import { compatOf, effectiveStock, PUBLIC_WHERE, vehicleSummaries, type Product } from "@/lib/catalog";
+import { compatOf, effectiveStock, maskAll, PUBLIC_WHERE, vehicleSummaries, type Product } from "@/lib/catalog";
 import { SITE, waLink } from "@/lib/site";
 import { AutoSubmitForm } from "@/components/auto-submit-form";
 import { ProductCard } from "@/components/product-card";
@@ -32,12 +32,12 @@ export default async function Finder({ searchParams }: { searchParams: Promise<S
 
   let results: { p: Product; confirmed: boolean }[] | null = null;
   if (make && model) {
-    const candidates = await all<Product>(
+    const candidates = await maskAll(await all<Product>(
       `SELECT p.*, c.name AS category_name, c.slug AS category_slug FROM products p LEFT JOIN categories c ON c.id = p.category_id
        WHERE ${PUBLIC_WHERE} AND EXISTS (SELECT 1 FROM product_compat pc WHERE pc.product_id = p.id AND lower(pc.make) = lower(?) AND lower(pc.model) = lower(?))
        ORDER BY p.name LIMIT 300`,
       make.name, model.name,
-    );
+    ));
     const tokens = part.toLowerCase().split(/\s+/).filter(Boolean);
     results = [];
     for (const p of candidates) {

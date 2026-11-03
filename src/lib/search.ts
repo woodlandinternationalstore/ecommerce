@@ -1,5 +1,5 @@
 import { all, get } from "./db";
-import { normalise, PUBLIC_WHERE, type Product } from "./catalog";
+import { maskAll, normalise, pricesVisible, PUBLIC_WHERE, type Product } from "./catalog";
 
 export type SearchParams = {
   q?: string;
@@ -94,11 +94,12 @@ export async function searchProducts(params: SearchParams) {
       : "p.name, p.id";
     const total = ((await get<{ n: number }>(`SELECT COUNT(*) AS n ${from}`, ...args))?.n) ?? 0;
     const items = await all<Product>(`SELECT ${LIST_COLS} ${from} ORDER BY ${order} LIMIT ? OFFSET ?`, ...args, pageSize, (page - 1) * pageSize);
-    return { total, page, pageSize, items };
+    return { total, page, pageSize, items: await maskAll(items) };
   }
 
   // With a query: relevance ranking (exact part number first) needs the matches in memory; sets are small.
-  const rows = await all<Product>(`SELECT ${LIST_COLS} ${from} LIMIT 600`, ...args);
+  const visible = await pricesVisible();
+  const rows = await maskAll(await all<Product>(`SELECT ${LIST_COLS} ${from} LIMIT 600`, ...args));
   const qn = normalise(params.q ?? "");
   const score = (p: Product) => {
     if (!qn) return 9;
@@ -119,6 +120,7 @@ export async function searchProducts(params: SearchParams) {
     }
     return score(x) - score(y) || x.name.localeCompare(y.name);
   });
+  void visible;
   return { total: rows.length, page, pageSize, items: rows.slice((page - 1) * pageSize, page * pageSize) };
 }
 
@@ -162,5 +164,6 @@ export async function searchPartTypes(opts: { category?: string; page?: number; 
      ${from} GROUP BY p.name ORDER BY p.name LIMIT ? OFFSET ?`,
     ...args, pageSize, (page - 1) * pageSize,
   );
-  return { total, page, pageSize, items };
+  const show = await pricesVisible();
+  return { total, page, pageSize, items: show ? items : items.map((t) => ({ ...t, min_price: null, max_price: null })) };
 }

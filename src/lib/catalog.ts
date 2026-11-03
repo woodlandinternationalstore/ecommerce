@@ -1,4 +1,4 @@
-import { all, get, run } from "./db";
+import { all, get, getSetting, run } from "./db";
 
 import type { Compat, Product } from "./stock";
 export * from "./stock";
@@ -10,17 +10,47 @@ export const PUBLIC_WHERE = "p.published = 1 AND p.archived = 0 AND (p.category_
 
 export const productBySlug = (slug: string) => get<Product>(`${SELECT} WHERE p.slug = ?`, slug);
 export const productById = (id: number) => get<Product>(`${SELECT} WHERE p.id = ?`, id);
-export const publicProductBySlug = (slug: string) => get<Product>(`${SELECT} WHERE p.slug = ? AND ${PUBLIC_WHERE}`, slug);
-export const publicProductsByIds = (ids: number[]) =>
-  ids.length ? all<Product>(`${SELECT} WHERE p.id IN (${ids.map(() => "?").join(",")}) AND ${PUBLIC_WHERE}`, ...ids) : Promise.resolve([] as Product[]);
+// ---- price visibility ----------------------------------------------------------------
+// The owner can hide prices site-wide (Admin > Settings). Prices stay stored; the public site, the cart and new
+// orders then treat every part as "price on request". Staff pages read products directly and still see prices.
+let priceCache: { at: number; value: boolean } | null = null;
 
-export const featuredProducts = (limit = 8) =>
-  all<Product>(`${SELECT} WHERE ${PUBLIC_WHERE} AND p.featured = 1 ORDER BY p.updated_at DESC LIMIT ?`, limit);
+export async function pricesVisible(): Promise<boolean> {
+  if (priceCache && Date.now() - priceCache.at < 5000) return priceCache.value;
+  const value = (await getSetting("show_prices", "1")) !== "0";
+  priceCache = { at: Date.now(), value };
+  return value;
+}
 
-export const relatedProducts = (p: Product, limit = 4) =>
-  all<Product>(
-    `${SELECT} WHERE ${PUBLIC_WHERE} AND p.id != ? AND (p.category_id = ? OR ?::integer IS NULL) ORDER BY p.updated_at DESC LIMIT ?`,
-    p.id, p.category_id, p.category_id, limit,
+export function resetPriceCache() {
+  priceCache = null;
+}
+
+/** Remove price information when prices are hidden. */
+export function maskPrices<T extends { price_mode: string; price_tzs: number | null; previous_price_tzs: number | null }>(p: T, visible: boolean): T {
+  return visible ? p : { ...p, price_mode: "request", price_tzs: null, previous_price_tzs: null };
+}
+export async function maskAll<T extends { price_mode: string; price_tzs: number | null; previous_price_tzs: number | null }>(rows: T[]): Promise<T[]> {
+  const visible = await pricesVisible();
+  return visible ? rows : rows.map((r) => maskPrices(r, false));
+}
+
+export const publicProductBySlug = async (slug: string) => {
+  const p = await get<Product>(`${SELECT} WHERE p.slug = ? AND ${PUBLIC_WHERE}`, slug);
+  return p ? maskPrices(p, await pricesVisible()) : p;
+};
+export const publicProductsByIds = async (ids: number[]) =>
+  ids.length ? maskAll(await all<Product>(`${SELECT} WHERE p.id IN (${ids.map(() => "?").join(",")}) AND ${PUBLIC_WHERE}`, ...ids)) : ([] as Product[]);
+
+export const featuredProducts = async (limit = 8) =>
+  maskAll(await all<Product>(`${SELECT} WHERE ${PUBLIC_WHERE} AND p.featured = 1 ORDER BY p.updated_at DESC LIMIT ?`, limit));
+
+export const relatedProducts = async (p: Product, limit = 4) =>
+  maskAll(
+    await all<Product>(
+      `${SELECT} WHERE ${PUBLIC_WHERE} AND p.id != ? AND (p.category_id = ? OR ?::integer IS NULL) ORDER BY p.updated_at DESC LIMIT ?`,
+      p.id, p.category_id, p.category_id, limit,
+    ),
   );
 
 export const productImages = (id: number) =>
