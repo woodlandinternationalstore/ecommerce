@@ -42,7 +42,7 @@ export default async function Home() {
       <section className="hero-light">
         <div className="container-x relative grid items-center lg:min-h-[540px] lg:grid-cols-[0.95fr_1.3fr]">
           <div className="relative z-10 py-8 lg:py-14">
-            <h1 className="hero-in text-[clamp(2.3rem,5.2vw,3.9rem)]" style={{ "--d": "60ms" } as React.CSSProperties}>
+            <h1 className="hero-in text-[clamp(2rem,4.2vw,3.2rem)] leading-[1.12]" style={{ "--d": "60ms" } as React.CSSProperties}>
               {t("The right part.")}<br /><span className="text-brand">{t("The right fit.")}</span><br />{t("The Woodland standard.")}
             </h1>
             <p className="hero-in mt-5 max-w-md text-[16.5px] font-medium leading-relaxed text-ink-2" style={{ "--d": "260ms" } as React.CSSProperties}>

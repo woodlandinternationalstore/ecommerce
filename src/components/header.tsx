@@ -21,8 +21,8 @@ export function Logo({ light = false, size = 56 }: { light?: boolean; size?: num
         style={{ height: size * 0.935, width: size }}
       />
       <span className="flex flex-col">
-        <span className="display text-[27px] text-brand">Woodland</span>
-        <span className={`display text-[12.5px] tracking-[0.02em] ${light ? "text-white" : "text-ink"}`}>International Store</span>
+        <span className="display caps text-[24px] tracking-tight text-brand">Woodland</span>
+        <span className={`display caps text-[10.5px] tracking-[0.12em] ${light ? "text-white" : "text-ink"}`}>International Store</span>
       </span>
     </Link>
   );
@@ -97,7 +97,7 @@ export async function Header() {
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.5"><path d="m6 9 6 6 6-6" /></svg>
             </summary>
             <div className="absolute left-0 top-12 z-50 grid w-[560px] grid-cols-2 gap-1 rounded-b-xl border border-line bg-white p-3 text-ink shadow-2xl">
-              <Link href="/shop" className="col-span-2 rounded-lg bg-surface px-3 py-2.5 text-sm font-extrabold uppercase text-brand">{t("All spare parts")}</Link>
+              <Link href="/shop" className="col-span-2 rounded-lg bg-surface px-3 py-2.5 text-sm font-extrabold text-brand">{t("All spare parts")}</Link>
               {cats.map((c) => (
                 <Link key={c.id} href={`/category/${c.slug}`} className="rounded-lg px-3 py-2.5 text-sm font-semibold normal-case hover:bg-surface">{t(c.name)}</Link>
               ))}
