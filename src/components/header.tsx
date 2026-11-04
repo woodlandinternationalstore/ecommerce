@@ -91,7 +91,7 @@ export async function Header() {
       <nav aria-label="Main" className="rednav hidden lg:block">
         <div className="container-x flex items-stretch">
           <details className="group relative">
-            <summary className="flex h-12 cursor-pointer list-none items-center gap-2 pr-5">
+            <summary className="flex h-12 cursor-pointer list-none items-center gap-2 whitespace-nowrap pr-4 xl:pr-5">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6"><path d="M3 6h18M3 12h18M3 18h18" /></svg>
               {t("Shop all")}
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.5"><path d="m6 9 6 6 6-6" /></svg>
@@ -104,9 +104,9 @@ export async function Header() {
             </div>
           </details>
           {bar.map((c) => (
-            <Link key={c.id} href={`/category/${c.slug}`} className="flex h-12 items-center border-l border-white/25 px-4 transition hover:bg-white/10">{t(SHORT[c.slug] ?? c.name)}</Link>
+            <Link key={c.id} href={`/category/${c.slug}`} className="flex h-12 items-center whitespace-nowrap border-l border-white/25 px-3 transition hover:bg-white/10 xl:px-4">{t(SHORT[c.slug] ?? c.name)}</Link>
           ))}
-          <Link href="/finder" className="ml-auto flex h-12 items-center gap-2 border-l border-white/25 pl-5">
+          <Link href="/finder" className="ml-auto flex h-12 items-center gap-2 whitespace-nowrap border-l border-white/25 pl-4 xl:pl-5">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M5 16l1.5-5h11L19 16M5 16v3h2v-1.5h10V19h2v-3M5 16h14M8 13h.01M16 13h.01" /></svg>
             {t("Vehicle finder")}
           </Link>

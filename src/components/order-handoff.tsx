@@ -23,7 +23,7 @@ export function OrderHandoff({
   return (
     <div className="mt-5 space-y-3">
       {autoNote && (
-        <p role="status" className="rounded-md bg-amber-50 p-3 text-sm font-bold">
+        <p role="status" className="rounded-md bg-surface p-3 text-sm font-bold">
           {t("Your browser blocked WhatsApp from opening automatically. Tap the green button below.")}
         </p>
       )}

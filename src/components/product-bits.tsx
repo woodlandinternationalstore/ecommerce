@@ -8,9 +8,9 @@ export function StockBadge({ p }: { p: Pick<Product, "stock_qty" | "stock_status
   const t = useT();
   const s = effectiveStock(p);
   const cls = {
-    in_stock: "bg-green-100 text-green-800",
-    low_stock: "bg-amber-100 text-amber-900",
-    out_of_stock: "bg-red-100 text-red-800",
+    in_stock: "bg-ink text-white",
+    low_stock: "bg-brand/10 text-brand",
+    out_of_stock: "bg-surface text-muted line-through",
     tbc: "bg-surface text-muted",
   }[s];
   return <span className={`badge ${cls}`}>{t(STOCK_LABEL[s])}</span>;

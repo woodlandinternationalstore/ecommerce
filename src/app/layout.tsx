@@ -6,7 +6,7 @@ import { I18nProvider } from "@/lib/i18n";
 import { getLang } from "@/lib/i18n-server";
 import { SITE } from "@/lib/site";
 
-const barlow = Barlow({ subsets: ["latin"], weight: ["600", "700", "800"], style: ["normal", "italic"], variable: "--font-barlow", display: "swap" });
+const barlow = Barlow({ subsets: ["latin"], weight: ["600", "700", "800"], variable: "--font-barlow", display: "swap" });
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter", display: "swap" });
 const mono = JetBrains_Mono({ subsets: ["latin"], weight: ["500", "700"], variable: "--font-mono", display: "swap" });
 

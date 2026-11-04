@@ -29,7 +29,7 @@ export default async function EditProduct({ params, searchParams }: Props) {
           <button className="btn btn-outline btn-sm">{p.archived ? "Restore" : "Archive"}</button></form>
         <form action={deleteProduct}><input type="hidden" name="id" value={p.id} /><button className="btn btn-outline btn-sm">Delete</button></form>
       </div>
-      {saved && <p role="status" className="rounded bg-green-50 p-3 text-sm font-bold text-green-800">Saved.</p>}
+      {saved && <p role="status" className="rounded bg-surface p-3 text-sm font-bold text-ink ring-1 ring-line">Saved.</p>}
       {error && <p role="alert" className="rounded bg-red-50 p-3 text-sm font-bold text-brand">{error}</p>}
 
       <ProductForm p={p} alts={(await altNumbers(p.id)).map((a) => a.part_number)} compat={await compatOf(p.id)} role={staff.role} />

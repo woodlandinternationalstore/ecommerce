@@ -18,7 +18,7 @@ export default async function ImportPage({ searchParams }: { searchParams: Promi
     <div className="space-y-6">
       <h1 className="text-4xl">Import / export products</h1>
       {sp.error && <p role="alert" className="rounded bg-red-50 p-3 text-sm font-bold text-brand">{sp.error}</p>}
-      {sp.done && <p role="status" className="rounded bg-green-50 p-3 text-sm font-bold text-green-800">Import complete: {created} created, {updated} updated.</p>}
+      {sp.done && <p role="status" className="rounded bg-surface p-3 text-sm font-bold text-ink ring-1 ring-line">Import complete: {created} created, {updated} updated.</p>}
 
       <section className="card space-y-3 p-4">
         <h2 className="text-2xl">1. Upload a CSV</h2>
@@ -49,7 +49,7 @@ export default async function ImportPage({ searchParams }: { searchParams: Promi
                 {preview.rows.slice(0, 300).map((r) => (
                   <tr key={r.line}>
                     <td className="p-2">{r.line}</td>
-                    <td><span className={`badge ${r.action === "error" ? "bg-red-100 text-red-800" : r.action === "create" ? "bg-green-100 text-green-800" : "bg-blue-100 text-blue-900"}`}>{r.action}</span></td>
+                    <td><span className={`badge ${r.action === "error" ? "bg-brand/10 text-brand" : r.action === "create" ? "bg-ink text-white" : "bg-surface text-ink ring-1 ring-line"}`}>{r.action}</span></td>
                     <td>{r.values.name}</td><td className="partno text-xs">{r.values.oem_number}</td>
                     <td className="text-xs text-brand">{r.errors.join("; ")}</td>
                   </tr>

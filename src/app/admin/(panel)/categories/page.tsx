@@ -24,7 +24,7 @@ export default async function Categories({ searchParams }: { searchParams: Promi
     <div className="space-y-5">
       <h1 className="text-4xl">Categories</h1>
       {sp.error && <p role="alert" className="rounded bg-red-50 p-3 text-sm font-bold text-brand">{sp.error}</p>}
-      {sp.saved && <p role="status" className="rounded bg-green-50 p-3 text-sm font-bold text-green-800">Saved.</p>}
+      {sp.saved && <p role="status" className="rounded bg-surface p-3 text-sm font-bold text-ink ring-1 ring-line">Saved.</p>}
       <h2 className="text-2xl">Add a category</h2>
       <Form />
       <h2 className="text-2xl">Existing categories</h2>

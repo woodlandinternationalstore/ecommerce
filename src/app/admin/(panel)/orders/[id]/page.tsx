@@ -35,7 +35,7 @@ export default async function OrderDetail({ params, searchParams }: Props) {
         <PrintButton />
       </div>
       <h1 className="hidden text-3xl print:block">{SITE.name} — Order {o.ref}</h1>
-      {saved && <p role="status" className="no-print rounded bg-green-50 p-3 text-sm font-bold text-green-800">Saved.</p>}
+      {saved && <p role="status" className="no-print rounded bg-surface p-3 text-sm font-bold text-ink ring-1 ring-line">Saved.</p>}
       {error && <p role="alert" className="no-print rounded bg-red-50 p-3 text-sm font-bold text-brand">{error}</p>}
 
       <div className="grid gap-4 md:grid-cols-2">

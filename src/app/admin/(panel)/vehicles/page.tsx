@@ -17,7 +17,7 @@ export default async function Vehicles({ searchParams }: { searchParams: Promise
     <div className="space-y-6">
       <h1 className="text-4xl">Vehicles</h1>
       <p className="text-sm text-muted">These lists feed the Vehicle Finder. Product compatibility is set on each product.</p>
-      {msg && <p role="status" className="rounded bg-green-50 p-3 text-sm font-bold text-green-800">{msg}</p>}
+      {msg && <p role="status" className="rounded bg-surface p-3 text-sm font-bold text-ink ring-1 ring-line">{msg}</p>}
       <div className="grid gap-4 md:grid-cols-3">
         <form action={addMake} className="card space-y-2 p-4"><h2 className="text-xl">Add make</h2><input name="name" className="field" placeholder="e.g. Toyota" required /><button className="btn btn-red btn-sm">Add</button></form>
         <form action={addModel} className="card space-y-2 p-4"><h2 className="text-xl">Add model</h2>

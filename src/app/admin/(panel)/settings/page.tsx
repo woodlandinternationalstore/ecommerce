@@ -25,7 +25,7 @@ export default async function Settings({ searchParams }: { searchParams: Promise
     <div className="space-y-5">
       <h1 className="text-4xl">Settings</h1>
       {sp.error && <p role="alert" className="rounded bg-red-50 p-3 text-sm font-bold text-brand">{sp.error}</p>}
-      {sp.saved && <p role="status" className="rounded bg-green-50 p-3 text-sm font-bold text-green-800">Saved.</p>}
+      {sp.saved && <p role="status" className="rounded bg-surface p-3 text-sm font-bold text-ink ring-1 ring-line">Saved.</p>}
       <form action={save} className="card max-w-xl space-y-3 p-4">
         <div><label className="label" htmlFor="h">Business hours (shown in footer and contact page)</label>
           <textarea id="h" name="business_hours" rows={4} defaultValue={await getSetting("business_hours")} className="field" placeholder="Enter the real opening hours" /></div>

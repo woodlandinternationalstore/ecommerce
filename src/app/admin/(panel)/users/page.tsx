@@ -39,7 +39,7 @@ export default async function Users({ searchParams }: { searchParams: Promise<{ 
     <div className="space-y-6">
       <h1 className="text-4xl">Staff users</h1>
       {sp.error && <p role="alert" className="rounded bg-red-50 p-3 text-sm font-bold text-brand">{sp.error}</p>}
-      {sp.saved && <p role="status" className="rounded bg-green-50 p-3 text-sm font-bold text-green-800">Saved.</p>}
+      {sp.saved && <p role="status" className="rounded bg-surface p-3 text-sm font-bold text-ink ring-1 ring-line">Saved.</p>}
       <form action={createUser} className="card grid gap-3 p-4 md:grid-cols-5">
         <input name="name" className="field" placeholder="Name" required />
         <input name="email" type="email" className="field" placeholder="Email" required />

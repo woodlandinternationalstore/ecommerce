@@ -131,7 +131,7 @@ export const SW: Record<string, string> = {
   "Results for": "Matokeo ya",
   "All parts": "Vipuri vyote",
   "All part types": "Aina zote za vipuri",
-  "part types. Open one to see every part number and price.": "aina za vipuri. Fungua moja kuona namba zote za vipuri na bei.",
+  "part types. Open one to see every part number.": "aina za vipuri. Fungua moja kuona namba zote za vipuri.",
   "part number": "namba ya kipuri",
   "part numbers": "namba za vipuri",
   "From": "Kuanzia",

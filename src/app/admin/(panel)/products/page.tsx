@@ -51,7 +51,7 @@ export default async function Products({ searchParams }: { searchParams: Promise
           <form action={loadDemoData}><button className="btn btn-outline btn-sm">Add DEMO products</button></form>
         )}
       </div>
-      {sp.msg && <p role="status" className="rounded bg-green-50 p-3 text-sm font-bold text-green-800">{sp.msg}</p>}
+      {sp.msg && <p role="status" className="rounded bg-surface p-3 text-sm font-bold text-ink ring-1 ring-line">{sp.msg}</p>}
 
       <form className="card flex flex-wrap items-end gap-2 p-3" method="get">
         <div className="min-w-48 flex-1"><label className="label" htmlFor="q">Search</label><input id="q" name="q" defaultValue={sp.q} className="field" placeholder="Name, part number, vehicle" /></div>
@@ -72,7 +72,7 @@ export default async function Products({ searchParams }: { searchParams: Promise
           <tbody className="divide-y divide-line">
             {rows.map((p) => (
               <tr key={p.id}>
-                <td className="p-3"><Link className="font-bold hover:text-brand" href={`/admin/products/${p.id}`}>{p.name}</Link>{p.is_demo ? <span className="badge ml-2 bg-amber-100 text-amber-900">DEMO</span> : null}</td>
+                <td className="p-3"><Link className="font-bold hover:text-brand" href={`/admin/products/${p.id}`}>{p.name}</Link>{p.is_demo ? <span className="badge ml-2 bg-surface text-muted ring-1 ring-line">DEMO</span> : null}</td>
                 <td className="partno text-xs">{p.oem_number}</td>
                 <td>{p.category_name ?? "—"}</td>
                 <td>{p.price_mode === "exact" && p.price_tzs ? tsh(p.price_tzs) : <span className="text-muted">On request</span>}</td>

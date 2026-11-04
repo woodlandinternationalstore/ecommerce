@@ -68,7 +68,7 @@ export async function ProductList({ sp, basePath, fixedCategory }: { sp: Sp; bas
       <div>
         {chips}
         {toolbar(false)}
-        <p className="mb-5 text-[15px] text-muted" aria-live="polite">{res.total} {t("part types. Open one to see every part number and price.")}</p>
+        <p className="mb-5 text-[15px] text-muted" aria-live="polite">{res.total} {t("part types. Open one to see every part number.")}</p>
         {res.items.length === 0 ? (
           <NoResults q="" exact={false} />
         ) : (

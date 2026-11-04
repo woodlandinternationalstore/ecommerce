@@ -65,9 +65,9 @@ export default async function Home() {
           <div className="relative -mx-4 lg:mx-0">
             {/* Artwork supplied by the owner (design mockup). Replace public/brand/hero.webp and hero-m.webp to change it. */}
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/brand/hero-m.webp" alt="Toyota Hilux with automotive spare parts" width={471} height={472} className="fade-top mx-auto block w-full max-w-md lg:hidden" />
+            <img src="/brand/hero-m.webp" alt="Toyota Hilux with automotive spare parts" width={471} height={472} className="hero-art fade-top mx-auto block w-full max-w-md lg:hidden" />
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/brand/hero.webp" alt="Toyota Hilux and Land Cruiser Prado with automotive spare parts" width={868} height={335} className="fade-left hidden lg:-ml-[8%] lg:block lg:w-[118%] lg:max-w-none" />
+            <img src="/brand/hero.webp" alt="Toyota Hilux and Land Cruiser Prado with automotive spare parts" width={868} height={335} className="hero-art fade-left hidden lg:-ml-[8%] lg:block lg:w-[118%] lg:max-w-none" />
           </div>
         </div>
       </section>
@@ -223,7 +223,7 @@ function ContactBlock({ t }: { t: (s: string) => string }) {
           <a href={`tel:+${SITE.whatsapp}`}>{SITE.whatsappDisplay}</a><br /><a href={`tel:+${SITE.altPhone}`}>{SITE.altPhoneDisplay}</a>
         </p>
       </div>
-      <a href={waLink()} target="_blank" rel="noopener" aria-label={t("Order on WhatsApp")} className="ml-auto grid h-14 w-14 shrink-0 place-items-center rounded-full bg-wa text-[#06230f] pulse">
+      <a href={waLink()} target="_blank" rel="noopener" aria-label={t("Order on WhatsApp")} className="ml-auto grid h-14 w-14 shrink-0 place-items-center rounded-full bg-wa text-[#06230f] pulse-wa">
         <svg width="30" height="30" viewBox="0 0 24 24" fill="currentColor"><path d={WA_ICON} /></svg>
       </a>
     </div>

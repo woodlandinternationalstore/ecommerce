@@ -45,9 +45,10 @@ body {
   text-rendering: optimizeLegibility;
 }
 @layer base {
-  h1, h2, h3 { font-family: var(--font-display); font-style: italic; text-transform: uppercase; letter-spacing: -0.01em; font-weight: 800; line-height: 1.02; text-wrap: balance; }
+  h1, h2, h3 { font-family: var(--font-display); font-style: normal; text-transform: uppercase; letter-spacing: -0.005em; font-weight: 800; line-height: 1.04; text-wrap: balance; }
+  h3 { text-transform: none; font-weight: 700; letter-spacing: -0.01em; }
 }
-.display { font-family: var(--font-display); font-style: italic; text-transform: uppercase; letter-spacing: -0.01em; font-weight: 800; line-height: 1; }
+.display { font-family: var(--font-display); font-style: normal; text-transform: uppercase; letter-spacing: -0.005em; font-weight: 800; line-height: 1; }
 .partno { font-family: var(--font-mono); font-weight: 700; letter-spacing: -0.01em; overflow-wrap: anywhere; }
 ::selection { background: var(--red); color: #fff; }
 
@@ -104,6 +105,7 @@ body {
 @keyframes spin-rev { to { transform: rotate(-360deg); } }
 @keyframes float { 0%, 100% { transform: translateY(0) rotate(var(--r, 0deg)); } 50% { transform: translateY(-14px) rotate(var(--r, 0deg)); } }
 @keyframes marquee { to { transform: translateX(-50%); } }
+@keyframes pulse-wa { 0% { box-shadow: 0 0 0 0 rgba(37, 211, 102, 0.45); } 70% { box-shadow: 0 0 0 16px transparent; } 100% { box-shadow: 0 0 0 0 transparent; } }
 @keyframes pulse-ring { 0% { box-shadow: 0 0 0 0 var(--red-glow); } 70% { box-shadow: 0 0 0 16px transparent; } 100% { box-shadow: 0 0 0 0 transparent; } }
 @keyframes glow-move { 0%, 100% { transform: translate(0, 0); } 50% { transform: translate(40px, -30px); } }
 
@@ -113,6 +115,7 @@ body {
 .marquee-track { display: flex; width: max-content; animation: marquee 32s linear infinite; }
 .marquee:hover .marquee-track { animation-play-state: paused; }
 .pulse { animation: pulse-ring 2.4s infinite; }
+.pulse-wa { animation: pulse-wa 2.4s infinite; }
 
 /* ---------- 3D tilt ---------- */
 .tilt-scene { perspective: 1100px; }
@@ -131,7 +134,7 @@ body {
 .depth-1 { transform: translateZ(24px); }
 
 /* ---------- hero ---------- */
-.hero { position: relative; isolation: isolate; overflow: hidden; background: radial-gradient(120% 90% at 85% 10%, #2b2d33 0%, var(--ink) 55%, #0f1012 100%); }
+.hero { position: relative; isolation: isolate; overflow: hidden; background: radial-gradient(120% 90% at 85% 10%, #2a2b2f 0%, var(--ink) 55%, #101113 100%); }
 .hero::before {
   content: ""; position: absolute; inset: 0; z-index: -2; opacity: 0.5;
   background-image: linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
@@ -162,10 +165,10 @@ body {
 /* ---------- mockup layout pieces ---------- */
 .bar-title { position: relative; padding-left: 14px; }
 .bar-title::before { content: ""; position: absolute; left: 0; top: 8%; bottom: 8%; width: 5px; border-radius: 2px; background: var(--red); }
-.topbar { background: #1a1f2b; color: #fff; }
+.topbar { background: var(--ink); color: #fff; }
 .rednav { background: linear-gradient(180deg, #d4122f, var(--red) 60%, var(--red-dark)); color: #fff; }
 .rednav a, .rednav summary { text-transform: uppercase; font-weight: 800; font-size: 0.84rem; letter-spacing: 0.02em; }
-.hero-light { position: relative; isolation: isolate; overflow: hidden; background: linear-gradient(180deg, #ffffff 0%, #eef1f6 100%); }
+.hero-light { position: relative; isolation: isolate; overflow: hidden; background: linear-gradient(180deg, #ffffff 0%, #f2f3f5 100%); }
 .fade-left { -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 18%); mask-image: linear-gradient(90deg, transparent 0, #000 18%); }
 .fade-top { -webkit-mask-image: linear-gradient(180deg, transparent 0, #000 14%); mask-image: linear-gradient(180deg, transparent 0, #000 14%); }
 .slant-red { background: linear-gradient(100deg, transparent 0 8%, var(--red) 8.2% 100%); }
@@ -173,10 +176,15 @@ body {
 /* ---------- type and density refinement ---------- */
 .container-x { padding-inline: 20px; }
 @media (min-width: 1024px) { .container-x { padding-inline: 28px; } }
-h1 { font-size: clamp(2rem, 4.6vw, 3.4rem); }
-h2 { font-size: clamp(1.5rem, 2.8vw, 2.1rem); }
-h3 { font-size: 1.3rem; }
+@layer base {
+  h1 { font-size: clamp(2rem, 4.6vw, 3.4rem); }
+  h2 { font-size: clamp(1.5rem, 2.8vw, 2.1rem); }
+  h3 { font-size: 1.3rem; }
+}
 .partno { font-size: 0.8rem; }
 p { text-wrap: pretty; }
 .card, .card-grey { border-radius: 16px; }
 .field { font-size: 16px; min-height: 50px; }
+
+/* calmer artwork: the photo carries many colours, so pull it toward the brand palette */
+.hero-art { filter: saturate(0.82) contrast(1.02); }

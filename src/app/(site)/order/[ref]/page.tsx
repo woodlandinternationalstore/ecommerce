@@ -50,7 +50,7 @@ export default async function OrderPage({ params, searchParams }: Props) {
               const now = i === idx && order.status !== "completed";
               return (
                 <li key={s} className="flex items-center gap-3">
-                  <span className={`grid h-7 w-7 shrink-0 place-items-center rounded-full text-xs font-extrabold ${done ? "bg-green-600 text-white" : now ? "bg-brand text-white pulse" : "bg-surface text-muted ring-1 ring-line"}`}>
+                  <span className={`grid h-7 w-7 shrink-0 place-items-center rounded-full text-xs font-extrabold ${done ? "bg-ink text-white" : now ? "bg-brand text-white pulse" : "bg-surface text-muted ring-1 ring-line"}`}>
                     {done ? "✓" : i + 1}
                   </span>
                   <span className={`text-sm ${now ? "font-extrabold" : done ? "font-semibold" : "text-muted"}`}>{t(STATUS_LABEL[s])}</span>
