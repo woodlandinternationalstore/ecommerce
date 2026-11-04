@@ -16,13 +16,13 @@ export async function Footer() {
         <div className="container-x grid gap-10 py-12 md:grid-cols-4">
           <div className="md:col-span-1">
             <Logo light />
-            <p className="mt-4 text-sm leading-relaxed text-silver">
+            <p className="mt-4 text-[15px] leading-relaxed text-silver">
               {t("WOODLAND INTERNATIONAL STORE supplies automotive spare parts in Kariakoo, Dar es Salaam, helping customers find suitable parts for their vehicles through convenient online browsing and direct WhatsApp ordering.")}
             </p>
           </div>
           <div>
             <h3 className="mb-3 text-lg">{t("Categories")}</h3>
-            <ul className="space-y-2 text-sm text-silver">
+            <ul className="space-y-2.5 text-[15px] text-silver">
               {cats.map((c) => (
                 <li key={c.id}><Link className="hover:text-white" href={`/category/${c.slug}`}>{t(c.name)}</Link></li>
               ))}
@@ -31,7 +31,7 @@ export async function Footer() {
           </div>
           <div>
             <h3 className="mb-3 text-lg">{t("Contact")}</h3>
-            <ul className="space-y-2 text-sm text-silver">
+            <ul className="space-y-2.5 text-[15px] text-silver">
               <li>{SITE.address}</li>
               <li><a className="hover:text-white" href={`tel:+${SITE.whatsapp}`}>{SITE.whatsappDisplay}</a></li>
               <li><a className="hover:text-white" href={`tel:+${SITE.altPhone}`}>{SITE.altPhoneDisplay}</a></li>
@@ -41,8 +41,8 @@ export async function Footer() {
           </div>
           <div>
             <h3 className="mb-3 text-lg">{t("Business hours")}</h3>
-            <p className="whitespace-pre-line text-sm text-silver">{hours || t("Opening hours to be confirmed. Please contact us on WhatsApp.")}</p>
-            <ul className="mt-5 space-y-2 text-sm text-silver">
+            <p className="whitespace-pre-line text-[15px] text-silver">{hours || t("Opening hours to be confirmed. Please contact us on WhatsApp.")}</p>
+            <ul className="mt-5 space-y-2.5 text-[15px] text-silver">
               <li><Link className="hover:text-white" href="/privacy">{t("Privacy Policy")}</Link></li>
               <li><Link className="hover:text-white" href="/terms">{t("Terms and Conditions")}</Link></li>
               <li><Link className="hover:text-white" href="/track">{t("Track order")}</Link></li>

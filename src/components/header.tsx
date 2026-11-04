@@ -43,12 +43,12 @@ export async function Header() {
   return (
     <header className="sticky top-0 z-40 no-print">
       <div className="topbar">
-        <div className="container-x flex items-center justify-between gap-3 py-2 text-[11px] font-bold uppercase tracking-wide sm:text-xs">
-          <span className="flex items-center gap-1.5"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2"><path d="M12 2l8 4v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6z" /></svg>{t("Genuine auto spare parts")}</span>
+        <div className="container-x flex items-center justify-between gap-2 py-2 text-[11px] font-bold uppercase tracking-wide sm:gap-3 sm:text-xs">
+          <span className="flex min-w-0 items-center gap-1.5 whitespace-nowrap"><svg className="shrink-0" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2"><path d="M12 2l8 4v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6z" /></svg>{t("Genuine auto spare parts")}</span>
           <span className="hidden items-center gap-1.5 sm:flex"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2"><path d="M12 21s-7-6.2-7-11a7 7 0 0114 0c0 4.8-7 11-7 11z" /><circle cx="12" cy="10" r="2.5" /></svg>Kariakoo, Dar es Salaam</span>
-          <a href={waLink()} target="_blank" rel="noopener" className="flex items-center gap-1.5">
+          <a href={waLink()} target="_blank" rel="noopener" className="ml-auto flex shrink-0 items-center gap-1.5 whitespace-nowrap" aria-label={t("WhatsApp us")}>
             <svg width="15" height="15" viewBox="0 0 24 24" fill="#25d366"><path d={WA_ICON} /></svg>
-            <span className="hidden sm:inline">{t("WhatsApp ordering available")}</span><span className="sm:hidden">{t("WhatsApp us")}</span>
+            <span className="hidden sm:inline">{t("WhatsApp ordering available")}</span>
           </a>
           <LangToggle />
           <a href={SITE.instagramUrl} target="_blank" rel="noopener" aria-label="Instagram" className="hidden sm:block">

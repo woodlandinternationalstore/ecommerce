@@ -41,10 +41,10 @@ export default async function Home() {
       <section className="hero-light">
         <div className="container-x relative grid items-center lg:grid-cols-[0.95fr_1.25fr]">
           <div className="relative z-10 py-8 lg:py-14">
-            <h1 className="hero-in text-[clamp(2.2rem,5.6vw,4.2rem)]" style={{ "--d": "60ms" } as React.CSSProperties}>
+            <h1 className="hero-in text-[clamp(2.3rem,5.2vw,3.9rem)]" style={{ "--d": "60ms" } as React.CSSProperties}>
               {t("The right part.")}<br /><span className="text-brand">{t("The right fit.")}</span><br />{t("The Woodland standard.")}
             </h1>
-            <p className="hero-in mt-4 max-w-md text-[15px] font-medium text-ink-2" style={{ "--d": "260ms" } as React.CSSProperties}>
+            <p className="hero-in mt-5 max-w-md text-[16.5px] font-medium leading-relaxed text-ink-2" style={{ "--d": "260ms" } as React.CSSProperties}>
               {t("Find quality automotive spare parts for Toyota, Nissan, Ford, Mitsubishi, Foton and other supported vehicle brands. Find the part you need and confirm your order directly with us.")}
             </p>
             <div className="hero-in mt-6 flex flex-col gap-3 sm:flex-row" style={{ "--d": "420ms" } as React.CSSProperties}>
@@ -89,7 +89,7 @@ export default async function Home() {
       </section>
 
       {/* ---------------- SHOP BY CATEGORY ---------------- */}
-      <section className="container-x mt-10">
+      <section className="container-x mt-12 lg:mt-14">
         <Reveal>
           <div className="flex items-end justify-between gap-3">
             <div className="flex flex-wrap items-baseline gap-x-4">
@@ -108,7 +108,7 @@ export default async function Home() {
                       ? <img src={c.cover} alt="" loading="lazy" className="h-full w-full object-contain p-2 transition duration-700 group-hover:scale-110" />
                       : <span className="grid h-full place-items-center text-silver"><Gear teeth={10} className="h-10 w-10" /></span>}
                   </span>
-                  <span className="flex flex-1 items-center justify-between gap-1 px-2 pb-2.5 pt-1 text-[12px] font-bold leading-tight">
+                  <span className="flex flex-1 items-center justify-between gap-1 px-2.5 pb-3 pt-1 text-[13px] font-bold leading-tight">
                     <span>{t(c.name)}</span><span className="text-brand" aria-hidden="true">→</span>
                   </span>
                 </Link>
@@ -127,7 +127,7 @@ export default async function Home() {
           </div>
         </Reveal>
         {featured.length ? (
-          <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+          <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
             {featured.map((p, i) => (
               <Reveal key={p.id} delay={(i % 5) * 70}>
                 <article className="pcard flex h-full gap-3 rounded-xl border border-line bg-white p-3 xl:flex-col">
@@ -135,8 +135,8 @@ export default async function Home() {
                     <ProductImage src={p.main_image} alt={`${p.name} ${p.oem_number}`.trim()} className="h-24 w-full xl:h-36" />
                   </Link>
                   <div className="flex min-w-0 flex-1 flex-col gap-1">
-                    <Link href={`/product/${p.slug}`} className="pname text-sm leading-snug hover:text-brand">{p.name}</Link>
-                    <span className="partno text-[11px] text-muted">{p.oem_number}</span>
+                    <Link href={`/product/${p.slug}`} className="pname text-[15.5px] hover:text-brand">{p.name}</Link>
+                    <span className="partno text-[12.5px] text-muted">{p.oem_number}</span>
                     {vehicles.get(p.id) && <span className="text-[11px] text-muted">{vehicles.get(p.id)}</span>}
                     {effectiveStock(p) !== "tbc" && <span><StockBadge p={p} /></span>}
                     <span className="mt-auto pt-1 text-base font-extrabold text-brand">

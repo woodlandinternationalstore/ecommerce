@@ -68,22 +68,22 @@ export async function ProductList({ sp, basePath, fixedCategory }: { sp: Sp; bas
       <div>
         {chips}
         {toolbar(false)}
-        <p className="mb-4 text-sm text-muted" aria-live="polite">{res.total} {t("part types. Open one to see every part number and price.")}</p>
+        <p className="mb-5 text-[15px] text-muted" aria-live="polite">{res.total} {t("part types. Open one to see every part number and price.")}</p>
         {res.items.length === 0 ? (
           <NoResults q="" exact={false} />
         ) : (
-          <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-4">
+          <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 xl:grid-cols-4">
             {res.items.map((pt, i) => (
               <Reveal key={pt.name} delay={(i % 4) * 60}>
                 <Link
                   href={link({ type: pt.name, page: undefined })}
                   className="pcard group flex h-full flex-col overflow-hidden rounded-2xl border border-line bg-white"
                 >
-                  <span className="pimg block overflow-hidden bg-white"><ProductImage src={pt.image} alt={pt.name} className="h-36 w-full sm:h-44" /></span>
-                  <span className="flex flex-1 flex-col gap-1 border-t border-line p-3.5">
-                    <span className="pname text-[15px] leading-snug group-hover:text-brand">{pt.name}</span>
-                    <span className="text-xs text-muted">{pt.n} {pt.n === 1 ? t("part number") : t("part numbers")}</span>
-                    <span className="mt-auto pt-2 text-sm font-bold">
+                  <span className="pimg block overflow-hidden bg-white"><ProductImage src={pt.image} alt={pt.name} className="h-40 w-full sm:h-48" /></span>
+                  <span className="flex flex-1 flex-col gap-1.5 border-t border-line p-4">
+                    <span className="pname text-[16px] group-hover:text-brand">{pt.name}</span>
+                    <span className="text-[13px] text-muted">{pt.n} {pt.n === 1 ? t("part number") : t("part numbers")}</span>
+                    <span className="mt-auto pt-2 text-[15px] font-extrabold">
                       {pt.min_price ? <>{t("From")} {tsh(pt.min_price)}</> : <span className="text-brand">{t("Price on request")}</span>}
                     </span>
                   </span>
@@ -159,11 +159,11 @@ export async function ProductList({ sp, basePath, fixedCategory }: { sp: Sp; bas
           <div className="flex items-end gap-2"><button className="btn btn-red flex-1">{t("Apply")}</button><Link href={basePath} className="btn btn-outline flex-1">{t("Clear")}</Link></div>
         </form>
       </details>
-      <p className="mb-3 text-sm text-muted" aria-live="polite">{res.total} {res.total === 1 ? t("product found") : t("products found")}</p>
+      <p className="mb-4 text-[15px] text-muted" aria-live="polite">{res.total} {res.total === 1 ? t("product found") : t("products found")}</p>
       {res.items.length === 0 ? (
         <NoResults q={sp.q} exact={looksLikePartNumber(sp.q ?? "")} />
       ) : (
-        <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-4">
+        <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 xl:grid-cols-4">
           {res.items.map((p) => <ProductCard key={p.id} p={p} vehicle={vehicles.get(p.id)} />)}
         </div>
       )}
