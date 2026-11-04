@@ -179,7 +179,7 @@ export function ChatWidget() {
         onClick={() => setOpen((o) => !o)}
         aria-expanded={open}
         aria-label={open ? t("Close chat") : t("Open chat")}
-        className="fixed bottom-[76px] right-3 z-50 grid h-14 w-14 place-items-center rounded-full bg-brand text-white shadow-[0_14px_30px_-8px_rgba(200,16,46,0.7)] transition hover:scale-105 md:bottom-6 md:right-6 md:h-16 md:w-16"
+        className={`${open ? "" : "nudge "}fixed bottom-[76px] right-3 z-50 grid h-14 w-14 place-items-center rounded-full bg-brand text-white shadow-[0_14px_30px_-8px_rgba(200,16,46,0.7)] transition hover:scale-105 md:bottom-6 md:right-6 md:h-16 md:w-16`}
       >
         {open ? (
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6"><path d="M6 6l12 12M18 6L6 18" /></svg>

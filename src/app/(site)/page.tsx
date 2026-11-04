@@ -2,12 +2,13 @@ import Link from "next/link";
 import { categories, featuredProducts, vehicleSummaries, effectiveStock, maxOrderQty } from "@/lib/catalog";
 import { all } from "@/lib/db";
 import { getT } from "@/lib/i18n-server";
-import { SITE, tsh, waLink } from "@/lib/site";
+import { SITE, tsh, VEHICLE_BRANDS, waLink } from "@/lib/site";
 import { AddToCart } from "@/components/add-to-cart";
 import { AskButton } from "@/components/ask-button";
 import { Gear } from "@/components/gear";
 import { HomeFinder, type FinderMake } from "@/components/home-finder";
-import { Reveal } from "@/components/motion";
+import { HeroScene } from "@/components/hero-scene";
+import { Reveal, Tilt } from "@/components/motion";
 import { ProductImage, StockBadge } from "@/components/product-bits";
 
 const WA_ICON = "M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2zm5.4 14.2c-.2.6-1.3 1.2-1.8 1.2-.5.1-1 .2-3.3-.7-2.8-1.2-4.6-4-4.7-4.2-.1-.2-1.1-1.5-1.1-2.8s.7-2 .9-2.3c.2-.3.5-.3.7-.3h.5c.2 0 .4 0 .6.5.2.6.8 2 .9 2.2.1.1.1.3 0 .5-.1.2-.1.3-.3.5l-.4.5c-.1.1-.3.3-.1.6.2.3.7 1.2 1.5 1.9 1 .9 1.9 1.2 2.2 1.3.3.1.4.1.6-.1.2-.2.7-.8.9-1.1.2-.3.4-.2.6-.1l2 1c.3.1.5.2.5.3.1.2.1.8-.1 1.4z";
@@ -39,7 +40,7 @@ export default async function Home() {
     <>
       {/* ---------------- HERO ---------------- */}
       <section className="hero-light">
-        <div className="container-x relative grid items-center lg:grid-cols-[0.95fr_1.25fr]">
+        <div className="container-x relative grid items-center lg:min-h-[540px] lg:grid-cols-[0.95fr_1.3fr]">
           <div className="relative z-10 py-8 lg:py-14">
             <h1 className="hero-in text-[clamp(2.3rem,5.2vw,3.9rem)]" style={{ "--d": "60ms" } as React.CSSProperties}>
               {t("The right part.")}<br /><span className="text-brand">{t("The right fit.")}</span><br />{t("The Woodland standard.")}
@@ -62,12 +63,8 @@ export default async function Home() {
               ))}
             </ul>
           </div>
-          <div className="relative -mx-4 lg:mx-0">
-            {/* Artwork supplied by the owner (design mockup). Replace public/brand/hero.webp and hero-m.webp to change it. */}
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/brand/hero-m.webp" alt="Toyota Hilux with automotive spare parts" width={471} height={472} className="hero-art fade-top mx-auto block w-full max-w-md lg:hidden" />
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/brand/hero.webp" alt="Toyota Hilux and Land Cruiser Prado with automotive spare parts" width={868} height={335} className="hero-art fade-left hidden lg:-ml-[8%] lg:block lg:w-[118%] lg:max-w-none" />
+          <div className="relative -mx-5 lg:mx-0">
+            <HeroScene alt="Toyota Hilux and Land Cruiser Prado with automotive spare parts" />
           </div>
         </div>
       </section>
@@ -88,6 +85,17 @@ export default async function Home() {
         </Reveal>
       </section>
 
+      {/* ---------------- BRAND MARQUEE ---------------- */}
+      <section className="marquee marquee-pause mt-10 overflow-hidden bg-ink py-3.5" aria-label="Vehicle brands">
+        <div className="marquee-track">
+          {[...VEHICLE_BRANDS, ...VEHICLE_BRANDS, ...VEHICLE_BRANDS, ...VEHICLE_BRANDS].map((b, i) => (
+            <Link key={`${b}-${i}`} href={`/shop?q=${encodeURIComponent(b)}`} className="display mx-7 flex items-center gap-7 text-xl text-white/85 transition hover:text-white">
+              {b}<span className="text-brand" aria-hidden="true">✦</span>
+            </Link>
+          ))}
+        </div>
+      </section>
+
       {/* ---------------- SHOP BY CATEGORY ---------------- */}
       <section className="container-x mt-12 lg:mt-14">
         <Reveal>
@@ -101,7 +109,7 @@ export default async function Home() {
           <ul className="mt-4 grid grid-cols-3 gap-2.5 sm:grid-cols-4 lg:flex lg:gap-2 lg:overflow-x-auto lg:pb-2 lg:[scrollbar-width:none]">
             {cats.map((c) => (
               <li key={c.id} className="lg:w-[118px] lg:shrink-0">
-                <Link href={`/category/${c.slug}`} className="group flex h-full flex-col overflow-hidden rounded-xl border border-line bg-white transition duration-300 hover:-translate-y-1 hover:border-brand/50 hover:shadow-[0_16px_30px_-18px_rgba(23,24,27,0.5)]">
+                <Tilt max={9} className="h-full"><Link href={`/category/${c.slug}`} className="group flex h-full flex-col overflow-hidden rounded-xl border border-line bg-white transition duration-300 hover:-translate-y-1 hover:border-brand/50 hover:shadow-[0_16px_30px_-18px_rgba(23,24,27,0.5)]">
                   <span className="block h-[88px] overflow-hidden bg-white sm:h-24">
                     {c.cover
                       // eslint-disable-next-line @next/next/no-img-element
@@ -111,7 +119,7 @@ export default async function Home() {
                   <span className="flex flex-1 items-center justify-between gap-1 px-2.5 pb-3 pt-1 text-[13px] font-bold leading-tight">
                     <span>{t(c.name)}</span><span className="text-brand" aria-hidden="true">→</span>
                   </span>
-                </Link>
+                </Link></Tilt>
               </li>
             ))}
           </ul>
@@ -130,7 +138,7 @@ export default async function Home() {
           <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
             {featured.map((p, i) => (
               <Reveal key={p.id} delay={(i % 5) * 70}>
-                <article className="pcard flex h-full gap-3 rounded-xl border border-line bg-white p-3 xl:flex-col">
+                <Tilt max={5} className="h-full"><article className="pcard flex h-full gap-3 rounded-xl border border-line bg-white p-3 xl:flex-col">
                   <Link href={`/product/${p.slug}`} className="pimg block w-24 shrink-0 overflow-hidden rounded-lg xl:w-full">
                     <ProductImage src={p.main_image} alt={`${p.name} ${p.oem_number}`.trim()} className="h-24 w-full xl:h-36" />
                   </Link>
@@ -145,7 +153,7 @@ export default async function Home() {
                     <AddToCart productId={p.id} maxQty={maxOrderQty(p)} compact />
                     <AskButton name={p.name} partNumber={p.oem_number} slug={p.slug} className="w-full" />
                   </div>
-                </article>
+                </article></Tilt>
               </Reveal>
             ))}
           </div>
